@@ -30,7 +30,7 @@
 struct App_Statistic
 {
    uint64_t Count;
-   uint64_t Result [5];
+   uint64_t Result [6];
 };
 
 int main (int argc, char * argv [])
@@ -59,7 +59,7 @@ int main (int argc, char * argv [])
       Statistic->Count = Statistic->Count + 1;
       Statistic->Result [Result] = Statistic->Result [Result] + 1;
       
-      //read (Timer, &Timer_Count, sizeof (uint64_t));
+      read (Timer, &Timer_Count, sizeof (uint64_t));
       
       if (Statistic->Count % 100 == 0)
       {
@@ -69,6 +69,7 @@ int main (int argc, char * argv [])
          printf ("Lepton_Transfer_Status_Unsynced           %lli \n", Statistic->Result [Lepton_Transfer_Status_Unsynced]);
          printf ("Lepton_Transfer_Status_CRC_Mismatch_1     %lli \n", Statistic->Result [Lepton_Transfer_Status_CRC_Mismatch_1]);
          printf ("Lepton_Transfer_Status_CRC_Mismatch_2     %lli \n", Statistic->Result [Lepton_Transfer_Status_CRC_Mismatch_2]);
+         printf ("Lepton_Transfer_Status_Error_ioctl        %lli \n", Statistic->Result [Lepton_Transfer_Status_Error_ioctl]);
          printf ("\n");
       }
    }

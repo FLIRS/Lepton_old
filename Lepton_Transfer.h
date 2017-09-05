@@ -16,8 +16,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-//gcc -std=gnu11 -fdiagnostics-color -Wall -Wno-missing-braces Lepton_Transfer.h
-
 #pragma once
 
 #include <assert.h>
@@ -31,11 +29,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "Lepton_SPI.h"
 
 
-#define Lepton_Transfer_Status_Ok             (0)
-#define Lepton_Transfer_Status_Discard        (1)
-#define Lepton_Transfer_Status_Unsynced       (2)
-#define Lepton_Transfer_Status_CRC_Mismatch_1 (3)
-#define Lepton_Transfer_Status_CRC_Mismatch_2 (4)
+#define Lepton_Transfer_Status_Ok             0
+#define Lepton_Transfer_Status_Discard        1
+#define Lepton_Transfer_Status_Unsynced       2
+#define Lepton_Transfer_Status_CRC_Mismatch_1 3
+#define Lepton_Transfer_Status_CRC_Mismatch_2 4
+#define Lepton_Transfer_Status_Error_ioctl    5
 
 
 char const * Lepton_Transfer_Status_Text (int Lepton_Transfer_Status)
@@ -63,7 +62,9 @@ char const * Lepton_Transfer_Status_Text (int Lepton_Transfer_Status)
    }
 }
 
-
+//Return 0 when not successful.
+//Return 1 when successful.
+//Receive <Count> number of <Data> from <Device>
 int Lepton_Transfer8 (uint8_t * Data, size_t Count, int Device)
 {
    struct spi_ioc_transfer Transfer =
@@ -80,12 +81,12 @@ int Lepton_Transfer8 (uint8_t * Data, size_t Count, int Device)
    memset ((void *) Data, 0, Count);
    
    int Result = ioctl (Device, SPI_IOC_MESSAGE (1), &Transfer);
-   assert (Result == Count);
    
-   return Result;
+   return (Result == Count);
 }
 
-
+//Return 0 when not successful.
+//Return 1 when successful.
 //Receive <Count> number of <Packet_Array> from <Device>
 int Lepton_Transfer_Packet (struct Lepton_Packet * Packet_Array, size_t Count, int Device)
 {
@@ -95,38 +96,38 @@ int Lepton_Transfer_Packet (struct Lepton_Packet * Packet_Array, size_t Count, i
 }
 
 
+//Return <Lepton_Transfer_Status_Ok> when succesful.
+//Return <Lepton_Transfer_Status_Error_ioctl> when SPI error.
+//Receive <Frame> from <Device>
 int Lepton_Transfer_Frame (struct Lepton_Frame * Frame, int Device)
 {
-   int Result;
-   Result = Lepton_Transfer_Packet (Frame->Packet_Array, 1, Device);
-   
-   if (Result < 0)
+   if (1 != Lepton_Transfer_Packet (Frame->Packet_Array + 0, 1, Device))
    {
-      return 0;
+      assert (0);
+      return Lepton_Transfer_Status_Error_ioctl;
    }
    
-   if (Lepton_Packet_Is_Discard (Frame->Packet_Array, 1))
+   if (1 == Lepton_Packet_Is_Discard (Frame->Packet_Array + 0))
    {
       return Lepton_Transfer_Status_Discard;
    }
    
-   if (Lepton_Packet_CRC_Mismatch (Frame->Packet_Array, 1) != -1)
+   if (0 == Lepton_Packet_Array_Is_Match (Frame->Packet_Array + 0, 1))
    {
       return Lepton_Transfer_Status_CRC_Mismatch_1;
    }
    
-   if (Frame->Packet_Array [0].Number != 0)
+   if (0 == Lepton_Packet_Is_First (Frame->Packet_Array + 0))
    {
       return Lepton_Transfer_Status_Unsynced;
    }
    
-   Result = Lepton_Transfer_Packet (Frame->Packet_Array + 1, 59, Device);
-   if (Result < 0)
+   if (1 != Lepton_Transfer_Packet (Frame->Packet_Array + 1, 59, Device))
    {
-      return 0;
+      return Lepton_Transfer_Status_Error_ioctl;
    }
    
-   if (Lepton_Packet_CRC_Mismatch (Frame->Packet_Array + 1, 59) != -1)
+   if (0 == Lepton_Packet_Array_Is_Match (Frame->Packet_Array + 1, 59))
    {
       return Lepton_Transfer_Status_CRC_Mismatch_2;
    }

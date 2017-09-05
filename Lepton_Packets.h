@@ -41,8 +41,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define Lepton_Packet_Payload_Size 160
 
 
-
-
 //  FLIR Lepton Datasheet Page 31.
 //  16 bits                        |  16 bits       | 160 Bytes
 //  ID Field                       |  CRC Field     | Payload Field
@@ -71,16 +69,27 @@ struct __attribute__((__packed__)) Lepton_Packet
 };
 
 
-
-
-int Lepton_Packet_Is_Discard (struct Lepton_Packet * Packet, size_t Count)
+//Return 0 when not first packet
+//Return 1 when first packet
+int Lepton_Packet_Is_First (struct Lepton_Packet * Packet)
 {
-   assert (Count == 1);
+   //This checks if the packet is the first packet of a frame.
+   return Packet->Number == 0;
+}
+
+
+//Return 0 when non discard
+//Return 1 when discard
+int Lepton_Packet_Is_Discard (struct Lepton_Packet * Packet)
+{
    //This checks if the packet is a discard packet.
    return (Packet->Reserved & 0x0F) == 0x0F;
 }
 
-int Lepton_Packet_CRC_Match (struct Lepton_Packet * Packet)
+
+//Return 0 when CRC mismatch
+//Return 1 when CRC match
+int Lepton_Packet_Is_Match (struct Lepton_Packet * Packet)
 {
    //Everything larger than 8 bit need to be byte order compatable.
    uint16_t Checksum = ntohs (Packet->Checksum);
@@ -113,65 +122,24 @@ int Lepton_Packet_CRC_Match (struct Lepton_Packet * Packet)
 }
 
 
-//Returns the index of first missmatch.
-//If no mismatch is found then returns -1.
-int Lepton_Packet_Array_CRC_Match (struct Lepton_Packet * Packet, size_t Count)
-{
-   int Result;
-   for (int I = 0; I < Count; I = I + 1)
-   {
-      Result = Lepton_Packet_CRC_Match (Packet + I);
-      if (Result == 0)
-      {
-         break;
-      }
-   }
-   return Result;
-}
-
-
-//Returns the index of first missmatch.
-//If no mismatch is found then returns -1.
-int Lepton_Packet_CRC_Mismatch (struct Lepton_Packet * Packet, size_t Count)
+//Return 0 when CRC mismatch
+//Return 1 when CRC match
+int Lepton_Packet_Array_Is_Match (struct Lepton_Packet * Packet, size_t Count)
 {
    for (int I = 0; I < Count; I = I + 1)
    {
-      //Everything larger than 8 bit need to be byte order compatable.
-      uint16_t Checksum = ntohs (Packet [I].Checksum);
-      
-      //FLIR Lepton Datasheet Page 31.
-      //The four most-significant bits of the ID are set to zero for calculation of the CRC.
-      Packet [I].Reserved = 0;
-      
-      //FLIR Lepton Datasheet Page 31.
-      //All bytes of the CRC are set to zero for calculation the CRC.
-      Packet [I].Checksum = 0;
-      
-      //Checksum > 0 is a temporary solution.
-      //FLIR Lepton Datasheet Page 31.
-      //CRC16_CCITT: x^16 + x^12 + x^5 + x^0
-      //Undocumented: CRC Seed equal zero.
-      if (Checksum > 0 && Checksum == Lepton_CRC16_CCITT ((uint8_t *) &Packet [I], sizeof (struct Lepton_Packet), 0, 0))
+      if (0 == Lepton_Packet_Is_Match (Packet + I))
       {
-         //printf ("C %i\n", Checksum);
-         //Checksum is matching.
-         //Reassign the checksum.
-         Packet [I].Checksum = htons (Checksum);
-      }
-      else
-      {
-         //Checksum is not matching.
-         //Return index of invalid packet.
-         return I;
+         return 0;
       }
    }
-   return -1;
+   return 1;
 }
 
 
-void Lepton_Packet_Net_To_Host (struct Lepton_Packet * Packet)
+void Lepton_Packet_Array_Net_To_Host (struct Lepton_Packet * Packet, size_t Count)
 {
-   for (int I = 0; I < Lepton_Width; I = I + 1)
+   for (int I = 0; I < Count; I = I + 1)
    {
       //Everything larger than 8 bit need be converted from network byte order to host byte order.
       Packet->Line [I] = ntohs (Packet->Line [I]);
