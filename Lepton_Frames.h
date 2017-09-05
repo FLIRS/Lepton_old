@@ -42,7 +42,8 @@ struct __attribute__((__packed__)) Lepton_Frame
 {
    struct Lepton_Packet Packet_Array [Lepton_Height];
 };
-   
+
+
 //Check if the packets are ordered from 0 .. 59
 int Lepton_Frame_Check_Climbing_Number (struct Lepton_Frame * Frame)
 {
@@ -58,16 +59,4 @@ int Lepton_Frame_Check_Climbing_Number (struct Lepton_Frame * Frame)
    return 1;
 }
 
-int Lepton_Frame_Check_Row_Valid (int Row)
-{
-   if (Row >= Lepton_Height)
-   {
-      return 0;
-   }
-   if (Row < 0)
-   {
-      return 0;
-   }
-   return 1;
-}
 

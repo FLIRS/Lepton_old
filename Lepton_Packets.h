@@ -87,6 +87,14 @@ int Lepton_Packet_Is_Discard (struct Lepton_Packet * Packet)
 }
 
 
+//Return 0 when no row is not valid
+//Return 1 when row is valid
+int Lepton_Packet_Is_Row_Valid (struct Lepton_Packet * Packet)
+{
+   return (Packet->Number >= 0) && (Packet->Number < Lepton_Height);
+}
+
+
 //Return 0 when CRC mismatch
 //Return 1 when CRC match
 int Lepton_Packet_Is_Match (struct Lepton_Packet * Packet)
@@ -137,6 +145,22 @@ int Lepton_Packet_Array_Is_Match (struct Lepton_Packet * Packet, size_t Count)
 }
 
 
+
+//Return 0 when no row is not valid
+//Return 1 when row is valid
+int Lepton_Packet_Array_Is_Row_Valid (struct Lepton_Packet * Packet, size_t Count)
+{
+   for (int I = 0; I < Count; I = I + 1)
+   {
+      if (0 == Lepton_Packet_Is_Row_Valid (Packet + I))
+      {
+         return 0;
+      }
+   }
+   return 1;
+}
+
+
 void Lepton_Packet_Array_Net_To_Host (struct Lepton_Packet * Packet, size_t Count)
 {
    for (int I = 0; I < Count; I = I + 1)
@@ -145,3 +169,4 @@ void Lepton_Packet_Array_Net_To_Host (struct Lepton_Packet * Packet, size_t Coun
       Packet->Line [I] = ntohs (Packet->Line [I]);
    }
 }
+

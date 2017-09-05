@@ -29,39 +29,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "Lepton_SPI.h"
 
 
-#define Lepton_Transfer_Status_Ok             0
-#define Lepton_Transfer_Status_Discard        1
-#define Lepton_Transfer_Status_Unsynced       2
-#define Lepton_Transfer_Status_CRC_Mismatch_1 3
-#define Lepton_Transfer_Status_CRC_Mismatch_2 4
-#define Lepton_Transfer_Status_Error_ioctl    5
-
-
-char const * Lepton_Transfer_Status_Text (int Lepton_Transfer_Status)
-{
-   switch (Lepton_Transfer_Status)
-   {
-      case Lepton_Transfer_Status_Ok:
-      return "Lepton_Transfer_Status_Ok";
-      break;
-      case Lepton_Transfer_Status_Discard:
-      return "Lepton_Transfer_Status_Discard";
-      break;
-      case Lepton_Transfer_Status_Unsynced:
-      return "Lepton_Transfer_Status_Unsynced";
-      break;
-      case Lepton_Transfer_Status_CRC_Mismatch_1:
-      return "Lepton_Transfer_Status_CRC_Mismatch_1";
-      break;
-      case Lepton_Transfer_Status_CRC_Mismatch_2:
-      return "Lepton_Transfer_Status_CRC_Mismatch_2";
-      break;
-      default:
-      assert (0);
-      break;
-   }
-}
-
 //Return 0 when not successful.
 //Return 1 when successful.
 //Receive <Count> number of <Data> from <Device>
@@ -96,42 +63,28 @@ int Lepton_Transfer_Packet (struct Lepton_Packet * Packet_Array, size_t Count, i
 }
 
 
-//Return <Lepton_Transfer_Status_Ok> when succesful.
-//Return <Lepton_Transfer_Status_Error_ioctl> when SPI error.
+//Return 1 when succesful.
+//Return 0 when error.
 //Receive <Frame> from <Device>
 int Lepton_Transfer_Frame (struct Lepton_Frame * Frame, int Device)
 {
-   if (1 != Lepton_Transfer_Packet (Frame->Packet_Array + 0, 1, Device))
-   {
-      assert (0);
-      return Lepton_Transfer_Status_Error_ioctl;
-   }
+   if 
+   (
+      0 == Lepton_Transfer_Packet           (Frame->Packet_Array + 0, 1, Device)  ||
+      0 == Lepton_Packet_Is_First           (Frame->Packet_Array + 0)             ||
+      0 == Lepton_Packet_Array_Is_Row_Valid (Frame->Packet_Array + 0, 1)          ||
+      0 == Lepton_Packet_Array_Is_Match     (Frame->Packet_Array + 0, 1)
+   )
+   {return 0;}
    
-   if (1 == Lepton_Packet_Is_Discard (Frame->Packet_Array + 0))
-   {
-      return Lepton_Transfer_Status_Discard;
-   }
+   if 
+   (
+      0 == Lepton_Transfer_Packet           (Frame->Packet_Array + 1, 59, Device) ||
+      0 == Lepton_Packet_Array_Is_Row_Valid (Frame->Packet_Array + 1, 59)         ||
+      0 == Lepton_Packet_Array_Is_Match     (Frame->Packet_Array + 1, 59)
+   )
+   {return 0;}
    
-   if (0 == Lepton_Packet_Array_Is_Match (Frame->Packet_Array + 0, 1))
-   {
-      return Lepton_Transfer_Status_CRC_Mismatch_1;
-   }
-   
-   if (0 == Lepton_Packet_Is_First (Frame->Packet_Array + 0))
-   {
-      return Lepton_Transfer_Status_Unsynced;
-   }
-   
-   if (1 != Lepton_Transfer_Packet (Frame->Packet_Array + 1, 59, Device))
-   {
-      return Lepton_Transfer_Status_Error_ioctl;
-   }
-   
-   if (0 == Lepton_Packet_Array_Is_Match (Frame->Packet_Array + 1, 59))
-   {
-      return Lepton_Transfer_Status_CRC_Mismatch_2;
-   }
-   
-   return Lepton_Transfer_Status_Ok;
+   return 1;
 }
 
