@@ -1,0 +1,179 @@
+/*
+FLIR Lepton Camera API Code
+Copyright (C) 2017  Kenth Johan Söderlind Åström
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+//gcc -std=gnu11 -fdiagnostics-color -Wall -Wno-missing-braces Lepton_Packets.h
+
+#pragma once
+
+#include "Lepton.h"
+#include "Lepton_CRC16_CCITT.h"
+
+#include <assert.h>
+
+//For using: uint8_t, uint16_t
+#include <stdint.h>
+
+//For using: size_t
+#include <stddef.h>
+
+//For using: ntohs
+#include <netinet/in.h>
+
+//Each packet is the same size.
+#define Lepton_Packet_Size 164
+
+//Payload size it the size of the data in each packets.
+#define Lepton_Packet_Payload_Size 160
+
+
+
+
+//  FLIR Lepton Datasheet Page 31.
+//  16 bits                        |  16 bits       | 160 Bytes
+//  ID Field                       |  CRC Field     | Payload Field
+//  -------------------------------|----------------|------------------
+//  4 bits      | 12 bits          |  16 bits       | 160 Bytes
+//  ID_Reserved | ID_Packet_Number |  CRC           | Payload
+struct __attribute__((__packed__)) Lepton_Packet
+{
+   //The ID field is located at byte 0 .. 1.
+   //The ID field is structured as following: (XXXX NNNN NNNN NNNN) where N is a packet number bit and X is reserved/secret.
+   //The packet number is maximum 59 so the packet number can be extracted from (xxxx 0000 NNNN NNNN) i.e. second byte.
+   //Lepton FLIR is big endian and Raspberry PI is little endian by defualt so the packet number is located at byte 1.
+   uint8_t Reserved;
+   uint8_t Number;
+   
+   //The CRC field is lcoated at bytes 2 .. 3.
+   //The checksum is stored in network byte order.
+   uint16_t Checksum;
+
+   //The payload field is lcoated at bytes 4 .. 164.
+   union
+   {
+      uint8_t Payload [Lepton_Packet_Payload_Size];
+      uint16_t Line [Lepton_Width];
+   };
+};
+
+
+
+
+int Lepton_Packet_Is_Discard (struct Lepton_Packet * Packet, size_t Count)
+{
+   assert (Count == 1);
+   //This checks if the packet is a discard packet.
+   return (Packet->Reserved & 0x0F) == 0x0F;
+}
+
+int Lepton_Packet_CRC_Match (struct Lepton_Packet * Packet)
+{
+   //Everything larger than 8 bit need to be byte order compatable.
+   uint16_t Checksum = ntohs (Packet->Checksum);
+   
+   //FLIR Lepton Datasheet Page 31.
+   //The four most-significant bits of the ID are set to zero for calculation of the CRC.
+   Packet->Reserved = 0;
+   
+   //FLIR Lepton Datasheet Page 31.
+   //All bytes of the CRC are set to zero for calculation the CRC.
+   Packet->Checksum = 0;
+   
+   //Checksum > 0 is a temporary solution.
+   //FLIR Lepton Datasheet Page 31.
+   //CRC16_CCITT: x^16 + x^12 + x^5 + x^0
+   //Undocumented: CRC Seed equal zero.
+   if (Checksum > 0 && Checksum == Lepton_CRC16_CCITT ((uint8_t *) Packet, sizeof (struct Lepton_Packet), 0, 0))
+   {
+      //Checksum is matching.
+      //Reassign the checksum.
+      Packet->Checksum = htons (Checksum);
+      return 1;
+   }
+   else
+   {
+      //Checksum is not matching.
+      //Return index of invalid packet.
+      return 0;
+   }
+}
+
+
+//Returns the index of first missmatch.
+//If no mismatch is found then returns -1.
+int Lepton_Packet_Array_CRC_Match (struct Lepton_Packet * Packet, size_t Count)
+{
+   int Result;
+   for (int I = 0; I < Count; I = I + 1)
+   {
+      Result = Lepton_Packet_CRC_Match (Packet + I);
+      if (Result == 0)
+      {
+         break;
+      }
+   }
+   return Result;
+}
+
+
+//Returns the index of first missmatch.
+//If no mismatch is found then returns -1.
+int Lepton_Packet_CRC_Mismatch (struct Lepton_Packet * Packet, size_t Count)
+{
+   for (int I = 0; I < Count; I = I + 1)
+   {
+      //Everything larger than 8 bit need to be byte order compatable.
+      uint16_t Checksum = ntohs (Packet [I].Checksum);
+      
+      //FLIR Lepton Datasheet Page 31.
+      //The four most-significant bits of the ID are set to zero for calculation of the CRC.
+      Packet [I].Reserved = 0;
+      
+      //FLIR Lepton Datasheet Page 31.
+      //All bytes of the CRC are set to zero for calculation the CRC.
+      Packet [I].Checksum = 0;
+      
+      //Checksum > 0 is a temporary solution.
+      //FLIR Lepton Datasheet Page 31.
+      //CRC16_CCITT: x^16 + x^12 + x^5 + x^0
+      //Undocumented: CRC Seed equal zero.
+      if (Checksum > 0 && Checksum == Lepton_CRC16_CCITT ((uint8_t *) &Packet [I], sizeof (struct Lepton_Packet), 0, 0))
+      {
+         //printf ("C %i\n", Checksum);
+         //Checksum is matching.
+         //Reassign the checksum.
+         Packet [I].Checksum = htons (Checksum);
+      }
+      else
+      {
+         //Checksum is not matching.
+         //Return index of invalid packet.
+         return I;
+      }
+   }
+   return -1;
+}
+
+
+void Lepton_Packet_Net_To_Host (struct Lepton_Packet * Packet)
+{
+   for (int I = 0; I < Lepton_Width; I = I + 1)
+   {
+      //Everything larger than 8 bit need be converted from network byte order to host byte order.
+      Packet->Line [I] = ntohs (Packet->Line [I]);
+   }
+}
