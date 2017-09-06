@@ -33,45 +33,51 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdint.h>
 
 
-
-
-
-//Copy all frame video lines to raw grayscale 16bit depth image.
+//Copy and convert a whole frame to a pixmap.
 void Lepton_Conversions_Frame_To_Grayscale16 
 (
    struct Lepton_Frame * Frame, 
    struct Lepton_Pixel_Grayscale16 * Pixmap
 )
 {
-   for (size_t Row = 0; Row < Lepton_Height; Row = Row + 1)
+   for (size_t R = 0; R < Lepton_Height; R = R + 1)
    {
-      for (size_t Column = 0; Column < Lepton_Width; Column = Column + 1)
+      for (size_t C = 0; C < Lepton_Width; C = C + 1)
       {
          uint16_t Pixel;
          size_t Index;
-         //Everything larger than 8 bit need be converted from network byte order to host byte order.
-         Pixel = ntohs (Frame->Packet_Array [Row].Line [Column]);
-         Index = Lepton_Map_2D (Column, Row, Lepton_Width, Lepton_Height);
+         
+         //Everything larger than 8 bit need be converted 
+         //from network byte order to host byte order.
+         Pixel = ntohs (Frame->Packet_Array [R].Line [C]);
+         Index = Lepton_Map_2D (Column, R, Lepton_Width, Lepton_Height);
          Pixmap [Index].Grayscale = Pixel;
       }
    }
 }
 
-//Copy packet video line to pixmap.
+
+//Copy and convert the <Packet> video line to a portion of the <Pixmap> 
+//depending on which row <Packet> are.
 void Lepton_Conversions_Packet_To_Grayscale16 
 (
    struct Lepton_Packet * Packet, 
    struct Lepton_Pixel_Grayscale16 * Pixmap
 )
 {
-   uint8_t Row;
-   Row = Packet->Number;
-   assert (Lepton_Frame_Check_Row_Valid (Row));
+   //The row must be valid because it is used to 
+   //position video line in pixmap.
+   assert (Lepton_Packet_Is_Row_Valid (Packet));
+   
+   //Packet data is by default network order.
+   //This might change in the future.
    Lepton_Packet_Net_To_Host (Packet);
-   memcpy (Pixmap + (Lepton_Width * Row), Packet->Payload, Lepton_Packet_Payload_Size);
+   
+   //Assign video line to correct position in the pixmap.
+   memcpy 
+   (
+      Pixmap + (Lepton_Width * Packet->Number), 
+      Packet->Payload, 
+      Lepton_Packet_Payload_Size
+   );
 }
-
-
-
-
-

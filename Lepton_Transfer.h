@@ -31,7 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 //Return 0 when not successful.
 //Return 1 when successful.
-//Receive <Count> number of <Data> from <Device>
+//Receive <Count> number of <Data> from SPI <Device>
 int Lepton_Transfer8 (uint8_t * Data, size_t Count, int Device)
 {
    struct spi_ioc_transfer Transfer =
@@ -44,7 +44,7 @@ int Lepton_Transfer8 (uint8_t * Data, size_t Count, int Device)
       .bits_per_word = Lepton_SPI_Bits_Per_Word
    };
    
-   //memset might not be needed.
+   //memset might not be useful here.
    memset ((void *) Data, 0, Count);
    
    int Result = ioctl (Device, SPI_IOC_MESSAGE (1), &Transfer);
@@ -54,7 +54,7 @@ int Lepton_Transfer8 (uint8_t * Data, size_t Count, int Device)
 
 //Return 0 when not successful.
 //Return 1 when successful.
-//Receive <Count> number of <Packet_Array> from <Device>
+//Receive <Count> number of <Packet_Array> from SPI <Device>
 int Lepton_Transfer_Packet (struct Lepton_Packet * Packet_Array, size_t Count, int Device)
 {
    int Result;
@@ -65,9 +65,17 @@ int Lepton_Transfer_Packet (struct Lepton_Packet * Packet_Array, size_t Count, i
 
 //Return 1 when succesful.
 //Return 0 when error.
-//Receive <Frame> from <Device>
-int Lepton_Transfer_Frame (struct Lepton_Frame * Frame, int Device)
+//Receive a <Frame> from SPI <Device>
+int Lepton_Transfer_Packet_Array 
+(
+   struct Lepton_Packet * Packet_Array, 
+   size_t Count, 
+   int Device
+)
 {
+   assert (Count > 0);
+   
+   //Check if the first packet is valid.
    if 
    (
       0 == Lepton_Transfer_Packet           (Frame->Packet_Array + 0, 1, Device)  ||
@@ -77,11 +85,12 @@ int Lepton_Transfer_Frame (struct Lepton_Frame * Frame, int Device)
    )
    {return 0;}
    
+   //If the first packet were valid then receive rest of them.
    if 
    (
-      0 == Lepton_Transfer_Packet           (Frame->Packet_Array + 1, 59, Device) ||
-      0 == Lepton_Packet_Array_Is_Row_Valid (Frame->Packet_Array + 1, 59)         ||
-      0 == Lepton_Packet_Array_Is_Match     (Frame->Packet_Array + 1, 59)
+      0 == Lepton_Transfer_Packet           (Frame->Packet_Array + 1, Count - 1, Device) ||
+      0 == Lepton_Packet_Array_Is_Row_Valid (Frame->Packet_Array + 1, Count - 1)         ||
+      0 == Lepton_Packet_Array_Is_Match     (Frame->Packet_Array + 1, Count - 1)
    )
    {return 0;}
    

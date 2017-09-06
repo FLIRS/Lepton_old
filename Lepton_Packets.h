@@ -50,9 +50,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 struct __attribute__((__packed__)) Lepton_Packet
 {
    //The ID field is located at byte 0 .. 1.
-   //The ID field is structured as following: (XXXX NNNN NNNN NNNN) where N is a packet number bit and X is reserved/secret.
-   //The packet number is maximum 59 so the packet number can be extracted from (xxxx 0000 NNNN NNNN) i.e. second byte.
-   //Lepton FLIR is big endian and Raspberry PI is little endian by defualt so the packet number is located at byte 1.
+   //The ID field is structured as following: (XXXX NNNN NNNN NNNN) 
+   //where N is a packet number bit and X is reserved/secret.
+   //The maximum packet number is 59 so the packet number can be 
+   //extracted from (xxxx 0000 NNNN NNNN) i.e. second byte.
+   //Lepton FLIR is big endian and Raspberry PI is little endian by 
+   //defualt.
    uint8_t Reserved;
    uint8_t Number;
    
@@ -67,6 +70,42 @@ struct __attribute__((__packed__)) Lepton_Packet
       uint16_t Line [Lepton_Width];
    };
 };
+
+
+//Return 0 when CRC mismatch
+//Return 1 when CRC match
+int Lepton_Packet_Is_Match (struct Lepton_Packet * Packet)
+{
+   //Checksum is larger than 16 bit so convert it from 
+   //network byte order to host byte order.
+   uint16_t Checksum = ntohs (Packet->Checksum);
+   
+   //FLIR Lepton Datasheet Page 31.
+   //The four most-significant bits of the ID are set to zero 
+   //for calculation of the CRC.
+   Packet->Reserved = 0;
+   
+   //FLIR Lepton Datasheet Page 31.
+   //All bytes of the CRC are set to zero for calculation the CRC.
+   Packet->Checksum = 0;
+   
+   //FLIR Lepton Datasheet Page 31.
+   //CRC16_CCITT: x^16 + x^12 + x^5 + x^0
+   //Undocumented: CRC Seed equal zero.
+   //Checksum > 0 might not be useful here.
+   if (Checksum > 0 && Checksum == Lepton_CRC16_CCITT ((uint8_t *) Packet, sizeof (struct Lepton_Packet), 0, 0))
+   {
+      //Checksum is matching.
+      //Restore the checksum.
+      Packet->Checksum = htons (Checksum);
+      return 1;
+   }
+   else
+   {
+      //Checksum is not matching.
+      return 0;
+   }
+}
 
 
 //Return 0 when not first packet
@@ -97,41 +136,6 @@ int Lepton_Packet_Is_Row_Valid (struct Lepton_Packet * Packet)
 
 //Return 0 when CRC mismatch
 //Return 1 when CRC match
-int Lepton_Packet_Is_Match (struct Lepton_Packet * Packet)
-{
-   //Everything larger than 8 bit need to be byte order compatable.
-   uint16_t Checksum = ntohs (Packet->Checksum);
-   
-   //FLIR Lepton Datasheet Page 31.
-   //The four most-significant bits of the ID are set to zero for calculation of the CRC.
-   Packet->Reserved = 0;
-   
-   //FLIR Lepton Datasheet Page 31.
-   //All bytes of the CRC are set to zero for calculation the CRC.
-   Packet->Checksum = 0;
-   
-   //Checksum > 0 is a temporary solution.
-   //FLIR Lepton Datasheet Page 31.
-   //CRC16_CCITT: x^16 + x^12 + x^5 + x^0
-   //Undocumented: CRC Seed equal zero.
-   if (Checksum > 0 && Checksum == Lepton_CRC16_CCITT ((uint8_t *) Packet, sizeof (struct Lepton_Packet), 0, 0))
-   {
-      //Checksum is matching.
-      //Reassign the checksum.
-      Packet->Checksum = htons (Checksum);
-      return 1;
-   }
-   else
-   {
-      //Checksum is not matching.
-      //Return index of invalid packet.
-      return 0;
-   }
-}
-
-
-//Return 0 when CRC mismatch
-//Return 1 when CRC match
 int Lepton_Packet_Array_Is_Match (struct Lepton_Packet * Packet, size_t Count)
 {
    for (int I = 0; I < Count; I = I + 1)
@@ -143,7 +147,6 @@ int Lepton_Packet_Array_Is_Match (struct Lepton_Packet * Packet, size_t Count)
    }
    return 1;
 }
-
 
 
 //Return 0 when no row is not valid
@@ -161,12 +164,31 @@ int Lepton_Packet_Array_Is_Row_Valid (struct Lepton_Packet * Packet, size_t Coun
 }
 
 
-void Lepton_Packet_Array_Net_To_Host (struct Lepton_Packet * Packet, size_t Count)
+void Lepton_Packet_Net_To_Host (struct Lepton_Packet * Packet)
 {
-   for (int I = 0; I < Count; I = I + 1)
+   for (int I = 0; I < Lepton_Width; I = I + 1)
    {
       //Everything larger than 8 bit need be converted from network byte order to host byte order.
       Packet->Line [I] = ntohs (Packet->Line [I]);
    }
 }
 
+
+//Check if the packets are ordered from 0 .. 59
+int Lepton_Packet_Array_Check_Climbing_Number 
+(
+   struct Lepton_Packet * Packet_Array, 
+   size_t Count
+)
+{
+   for (int I = 0; I < (Count - 1); I = I + 1)
+   {
+      uint8_t X0 = Packet_Array [I + 0].Number;
+      uint8_t X1 = Packet_Array [I + 1].Number;
+      if ((X0 + 1) != X1)
+      {
+         return 0;
+      }
+   }
+   return 1;
+}
