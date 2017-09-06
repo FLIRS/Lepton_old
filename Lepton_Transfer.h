@@ -97,3 +97,24 @@ int Lepton_Transfer_Packet_Array
    return 1;
 }
 
+
+
+
+void Lepton_Transfer_Init 
+(
+   struct spi_ioc_transfer * Transfer,
+   struct Lepton_Packet * Data,
+   size_t Count,
+   size_t Speed
+)
+{
+   memset (Transfer, 0, sizeof (struct spi_ioc_transfer));
+   Transfer->tx_buf        = (unsigned long) NULL;
+   Transfer->rx_buf        = (unsigned long) Data;
+   Transfer->len           = sizeof (struct Lepton_Packet) * Count;
+   Transfer->delay_usecs   = 0;
+   Transfer->speed_hz      = Speed;
+   Transfer->bits_per_word = Lepton_SPI_Bits_Per_Word;
+   Transfer->cs_change     = 0;
+   Transfer->pad           = 0;
+}
