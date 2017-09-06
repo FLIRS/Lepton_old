@@ -73,24 +73,24 @@ int Lepton_Transfer_Packet_Array
    int Device
 )
 {
-   assert (Count > 0);
+   assert (Count == Lepton_Height);
    
    //Check if the first packet is valid.
    if 
    (
-      0 == Lepton_Transfer_Packet           (Frame->Packet_Array + 0, 1, Device)  ||
-      0 == Lepton_Packet_Is_First           (Frame->Packet_Array + 0)             ||
-      0 == Lepton_Packet_Array_Is_Row_Valid (Frame->Packet_Array + 0, 1)          ||
-      0 == Lepton_Packet_Array_Is_Match     (Frame->Packet_Array + 0, 1)
+      0 == Lepton_Transfer_Packet           (Packet_Array + 0, 1, Device)  ||
+      0 == Lepton_Packet_Is_First           (Packet_Array + 0)             ||
+      0 == Lepton_Packet_Array_Is_Row_Valid (Packet_Array + 0, 1)          ||
+      0 == Lepton_Packet_Array_Is_Match     (Packet_Array + 0, 1)
    )
    {return 0;}
    
    //If the first packet were valid then receive rest of them.
    if 
    (
-      0 == Lepton_Transfer_Packet           (Frame->Packet_Array + 1, Count - 1, Device) ||
-      0 == Lepton_Packet_Array_Is_Row_Valid (Frame->Packet_Array + 1, Count - 1)         ||
-      0 == Lepton_Packet_Array_Is_Match     (Frame->Packet_Array + 1, Count - 1)
+      0 == Lepton_Transfer_Packet           (Packet_Array + 1, Count - 1, Device) ||
+      0 == Lepton_Packet_Array_Is_Row_Valid (Packet_Array + 1, Count - 1)         ||
+      0 == Lepton_Packet_Array_Is_Match     (Packet_Array + 1, Count - 1)
    )
    {return 0;}
    

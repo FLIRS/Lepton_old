@@ -38,7 +38,7 @@ int main (int argc, char * argv [])
    int Device;
    Device = Lepton_SPI_Open ("/dev/spidev0.0");
    
-   struct Lepton_Frame Frame [1];
+   struct Lepton_Packet Packets [Lepton_Height];
    
    struct App_Statistic Statistic [1] = {0};
    
@@ -55,7 +55,7 @@ int main (int argc, char * argv [])
    while (1)
    {
       int Result;
-      Result = Lepton_Transfer_Frame (Frame, Device);
+      Result = Lepton_Transfer_Packet_Array (Packets, Lepton_Height, Device);
       Statistic->Count = Statistic->Count + 1;
       Statistic->Result [Result] = Statistic->Result [Result] + 1;
       
