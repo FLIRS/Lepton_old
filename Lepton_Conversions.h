@@ -19,7 +19,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
 #include "Lepton.h"
-#include "Lepton_Frames.h"
 #include "Lepton_Pixels.h"
 #include "Lepton_Map.h"
 
@@ -31,30 +30,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 //uint8_t
 #include <stdint.h>
-
-
-//Copy and convert a whole frame to a pixmap.
-void Lepton_Conversions_Frame_To_Grayscale16 
-(
-   struct Lepton_Frame * Frame, 
-   struct Lepton_Pixel_Grayscale16 * Pixmap
-)
-{
-   for (size_t R = 0; R < Lepton_Height; R = R + 1)
-   {
-      for (size_t C = 0; C < Lepton_Width; C = C + 1)
-      {
-         uint16_t Pixel;
-         size_t Index;
-         
-         //Everything larger than 8 bit need be converted 
-         //from network byte order to host byte order.
-         Pixel = ntohs (Frame->Packet_Array [R].Line [C]);
-         Index = Lepton_Map_2D (Column, R, Lepton_Width, Lepton_Height);
-         Pixmap [Index].Grayscale = Pixel;
-      }
-   }
-}
 
 
 //Copy and convert the <Packet> video line to a portion of the <Pixmap> 

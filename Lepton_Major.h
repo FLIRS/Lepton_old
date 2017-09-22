@@ -46,11 +46,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 struct Lepton_Major_SPI
 {
-   char const *            Name;
-   int                     Handle;
-   int                     Status;
-   int                     Error;
-   char *                  Error_Message;
+   char const * Name;
+   int          Handle;
+   int          Status;
+   int          Error;
+   char const * Error_Message;
 };
 
 
@@ -264,12 +264,12 @@ void Lepton_Major_Printf (struct Lepton_Major * Item)
    printf ("SPI delay_usecs    %10i    %10i\n", Item->Transfer [0].delay_usecs, Item->Transfer [1].delay_usecs);
    printf ("SPI speed_hz       %10i Hz %10i Hz\n", Item->Transfer [0].speed_hz, Item->Transfer [1].speed_hz);
    printf ("SPI bits_per_word  %10i    %10i\n", Item->Transfer [0].bits_per_word, Item->Transfer [1].bits_per_word);
-   printf ("Width              %10i\n", Item->Width);
-   printf ("Height             %10i\n", Item->Height);
+   printf ("Frame Width        %10i\n", Item->Width);
+   printf ("Frame Height       %10i\n", Item->Height);
    printf ("Packet_Array       %10p\n", Item->Packet_Array);
    printf ("Pixmap             %10p\n", Item->Pixmap);
-   printf ("Received           %10lli\n", Item->Received_Count);
-   printf ("Unreceived         %10lli\n", Item->Unreceived_Count);
+   printf ("Frame Received     %10lli\n", Item->Received_Count);
+   printf ("Frame Unreceived   %10lli\n", Item->Unreceived_Count);
    printf ("Transactions       %10lli\n", Item->Transaction_Count);
    printf ("\n");
 }
