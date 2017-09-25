@@ -56,3 +56,23 @@ void Lepton_Conversions_Packet_To_Grayscale16
       Lepton_Packet_Payload_Size
    );
 }
+
+
+void Lepton_Conversions_Frame_To_Grayscale16 
+(
+   struct Lepton_Packet * Packet_Array, 
+   struct Lepton_Pixel_Grayscale16 * Pixmap
+)
+{
+   for (size_t I = 0; I < Lepton_Height; I = I + 1)
+   {
+      assert (Lepton_Packet_Is_Row_Valid (Packet_Array + I));
+      Lepton_Packet_Net_To_Host (Packet_Array + I);
+      memcpy 
+      (
+         Pixmap + (Lepton_Width * I), 
+         Packet_Array [I].Payload, 
+         Lepton_Packet_Payload_Size
+      );
+   }
+}

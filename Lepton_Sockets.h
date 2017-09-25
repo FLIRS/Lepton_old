@@ -56,8 +56,8 @@ int Lepton_Sockets_Receive_Packet_Pixmap
    struct sockaddr_in Address;
    struct Lepton_Packet Packet [1];
    size_t I = 0;
-   for (I = 0; I < Lepton_Height; I = I + 1)
-   //while (I < Lepton_Height)
+   //for (I = 0; I < Lepton_Height; I = I + 1)
+   while (I < Lepton_Height)
    {
       Result = Lepton_Sockets_Receive_Packet (Socket, &Address, &Length, Packet);
       if (Result != sizeof (struct Lepton_Packet))
@@ -66,7 +66,7 @@ int Lepton_Sockets_Receive_Packet_Pixmap
       }
       Lepton_Conversions_Packet_To_Grayscale16 (Packet, Pixmap);
       //printf ("%i\n", Packet->Number);
-      //I = I + 1;
+      I = I + 1;
    }
    return I;
 }

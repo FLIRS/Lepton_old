@@ -91,3 +91,15 @@ int Lepton_SPI_Open (char const * Name)
 
    return Device;
 }
+
+
+void Lepton_SPI_Transfer 
+(
+   int Device,
+   struct spi_ioc_transfer * Transfer
+)
+{
+   int Result;
+   Result = ioctl (Device, SPI_IOC_MESSAGE (1), Transfer);
+   assert (Result == Transfer->len);
+}
