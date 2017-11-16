@@ -48,11 +48,65 @@ void Lepton_Strings_Base_Converter (int Value, char * String, size_t Size, size_
 
 
 
-void Lepton_Strings_Base_printf (int Value, size_t Width, size_t Base)
+void Lepton_Strings_Base_printf (int Value, size_t Width, size_t Base, char * Format)
 {
    char Buffer [100] = {'\0'};
    assert (Width < sizeof (Buffer));
    memset (Buffer, '0', Width);
    Lepton_Strings_Base_Converter (Value, Buffer, Width, Base);
-   printf ("%s", Buffer);
+   printf (Format, Buffer);
+}
+
+
+
+
+char * Lepton_Strings_Command (int Command)
+{
+   switch (Command)
+   {
+      case Lepton_I2C_Command_AUX_Kelvin:
+      return "AUX_Kelvin";
+      case Lepton_I2C_Command_FPA_Kelvin:
+      return "FPA_Kelvin";
+      case Lepton_I2C_Command_Uptime:
+      return "Uptime";
+      case Lepton_I2C_Command_FFC_Mode_Get:
+      return "FFC_Mode_Get";
+      case Lepton_I2C_Command_FFC_Status:
+      return "FFC_Status";
+      default:
+      return "Unkown";
+   }
+}
+
+
+char * Lepton_Strings_FFC_Profile (int Command)
+{
+   switch (Command)
+   {
+      case Lepton_I2C_FFC_Profile_Manual:
+      return "FFC_Profile_Manual";
+      case Lepton_I2C_FFC_Profile_Auto:
+      return "FFC_Profile_Auto";
+      case Lepton_I2C_FFC_Profile_External:
+      return "FFC_Profile_External";
+      default:
+      return "Unkown";
+   }
+}
+
+
+char * Lepton_Strings_FFC_Status (int Command)
+{
+   switch (Command)
+   {
+      case Lepton_I2C_FFC_Ready:
+      return "FFC_Ready";
+      case Lepton_I2C_FFC_Busy:
+      return "FFC_Busy";
+      case Lepton_I2C_FFC_Average:
+      return "FFC_Average";
+      default:
+      return "Unkown";
+   }
 }
