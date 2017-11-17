@@ -40,7 +40,7 @@ int Lepton_Transfer8 (uint8_t * Data, size_t Count, int Device)
       .rx_buf = (unsigned long) Data,
       .len = Count,
       .delay_usecs = 0,
-      .speed_hz = Lepton_SPI_Speed_Recomended,
+      .speed_hz = Lepton_SPI_Speed_Max,
       .bits_per_word = Lepton_SPI_Bits_Per_Word
    };
    
@@ -112,7 +112,12 @@ int Lepton_Transfer_Packet_Array1
    Lepton_Transfer_Packet (Packet_Array, 1, Device);
    if (Packet_Array [0].Reserved & 0x0F) {return 0;}
    if (Packet_Array [0].Number != 0) {return 0;}
+   if (Lepton_Packet_Array_Is_Match (Packet_Array + 0, 1) == 0) {return 0;}
    Lepton_Transfer_Packet (Packet_Array + 1, Count - 1, Device);
+   for (size_t I = 1; I < Count; I = I + 1)
+   {
+      Packet_Array [I].Number = I;
+   }
    return 1;
 }
 

@@ -30,6 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 //uint8_t
 #include <stdint.h>
+#include <stdio.h>
 
 
 //Copy and convert the <Packet> video line to a portion of the <Pixmap> 
@@ -37,7 +38,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 void Lepton_Conversions_Packet_To_Grayscale16 
 (
    struct Lepton_Packet * Packet, 
-   struct Lepton_Pixel_Grayscale16 * Pixmap
+   struct Lepton_Pixel_Grayscale16 * Pixmap,
+   uint8_t Segment
 )
 {
    //The row must be valid because it is used to 
@@ -51,7 +53,7 @@ void Lepton_Conversions_Packet_To_Grayscale16
    //Assign video line to correct position in the pixmap.
    memcpy 
    (
-      Pixmap + (Lepton_Width * Packet->Number), 
+      Pixmap + (Segment * Lepton_Height * Lepton2_Width + Lepton_Width * Packet->Number), 
       Packet->Payload, 
       Lepton_Packet_Payload_Size
    );
@@ -76,3 +78,6 @@ void Lepton_Conversions_Frame_To_Grayscale16
       );
    }
 }
+
+
+
