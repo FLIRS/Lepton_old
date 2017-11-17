@@ -76,6 +76,8 @@ struct __attribute__((__packed__)) Lepton_Packet
 //Return 1 when CRC match
 int Lepton_Packet_Is_Match (struct Lepton_Packet * Packet)
 {
+   int Success;
+   uint8_t Preserve_Reserved = Packet->Reserved;
    //Checksum is larger than 16 bit so convert it from 
    //network byte order to host byte order.
    uint16_t Checksum = ntohs (Packet->Checksum);
@@ -83,7 +85,7 @@ int Lepton_Packet_Is_Match (struct Lepton_Packet * Packet)
    //FLIR Lepton Datasheet Page 31.
    //The four most-significant bits of the ID are set to zero 
    //for calculation of the CRC.
-   Packet->Reserved = 0;
+   Packet->Reserved = Packet->Reserved & 0x0F;
    
    //FLIR Lepton Datasheet Page 31.
    //All bytes of the CRC are set to zero for calculation the CRC.
@@ -93,18 +95,14 @@ int Lepton_Packet_Is_Match (struct Lepton_Packet * Packet)
    //CRC16_CCITT: x^16 + x^12 + x^5 + x^0
    //Undocumented: CRC Seed equal zero.
    //Checksum > 0 might not be useful here.
-   if (Checksum > 0 && Checksum == Lepton_CRC16_CCITT ((uint8_t *) Packet, sizeof (struct Lepton_Packet), 0, 0))
-   {
-      //Checksum is matching.
-      //Restore the checksum.
-      Packet->Checksum = htons (Checksum);
-      return 1;
-   }
-   else
-   {
-      //Checksum is not matching.
-      return 0;
-   }
+   Success = (Checksum > 0 && Checksum == Lepton_CRC16_CCITT ((uint8_t *) Packet, sizeof (struct Lepton_Packet), 0, 0));
+   
+   //Checksum is matching.
+   //Restore the checksum.
+   Packet->Checksum = htons (Checksum);
+   Packet->Reserved = Preserve_Reserved;
+
+   return Success;
 }
 
 
@@ -138,14 +136,15 @@ int Lepton_Packet_Is_Row_Valid (struct Lepton_Packet * Packet)
 //Return 1 when CRC match
 int Lepton_Packet_Array_Is_Match (struct Lepton_Packet * Packet, size_t Count)
 {
+   size_t N = 0;
    for (int I = 0; I < Count; I = I + 1)
    {
-      if (0 == Lepton_Packet_Is_Match (Packet + I))
+      if (Lepton_Packet_Is_Match (Packet + I))
       {
-         return 0;
+         N = N + 1;
       }
    }
-   return 1;
+   return N;
 }
 
 

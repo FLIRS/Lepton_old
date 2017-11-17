@@ -20,17 +20,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
+#define Lepton_Width 80
+#define Lepton_Height 60
 
 //Width by pixels.
-#define Lepton_Width 80
+#define Lepton2_Width 80
+#define Lepton3_Width 160
 
 //Height by pixels.
-#define Lepton_Height 60
+#define Lepton2_Height 60
+#define Lepton3_Height 120
 
 #define Lepton_Frame_Per_Seconds 27
 
-#define Lepton_Nano_Seconds_Per_Frame (1000000000/27)
-
+#define Lepton2_Nano_Seconds_Per_Frame (1000000000/27)
+#define Lepton3_Nano_Seconds_Per_Frame (1000000000/106)
 
 /*
 Page 34.

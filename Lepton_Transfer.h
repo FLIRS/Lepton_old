@@ -81,7 +81,8 @@ int Lepton_Transfer_Packet_Array
       0 == Lepton_Transfer_Packet           (Packet_Array + 0, 1, Device)  ||
       0 == Lepton_Packet_Is_First           (Packet_Array + 0)             ||
       0 == Lepton_Packet_Array_Is_Row_Valid (Packet_Array + 0, 1)          ||
-      0 == Lepton_Packet_Array_Is_Match     (Packet_Array + 0, 1)
+      0 == Lepton_Packet_Array_Is_Match     (Packet_Array + 0, 1)          ||
+      0
    )
    {return 0;}
    
@@ -90,10 +91,28 @@ int Lepton_Transfer_Packet_Array
    (
       0 == Lepton_Transfer_Packet           (Packet_Array + 1, Count - 1, Device) ||
       0 == Lepton_Packet_Array_Is_Row_Valid (Packet_Array + 1, Count - 1)         ||
-      0 == Lepton_Packet_Array_Is_Match     (Packet_Array + 1, Count - 1)
+      0 == Lepton_Packet_Array_Is_Match     (Packet_Array + 1, Count - 1)         ||
+      0
    )
    {return 0;}
    
+   return 1;
+}
+
+
+
+int Lepton_Transfer_Packet_Array1 
+(
+   struct Lepton_Packet * Packet_Array, 
+   size_t Count, 
+   int Device
+)
+{
+   assert (Count == Lepton_Height);
+   Lepton_Transfer_Packet (Packet_Array, 1, Device);
+   if (Packet_Array [0].Reserved & 0x0F) {return 0;}
+   if (Packet_Array [0].Number != 0) {return 0;}
+   Lepton_Transfer_Packet (Packet_Array + 1, Count - 1, Device);
    return 1;
 }
 
