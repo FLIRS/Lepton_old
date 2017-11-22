@@ -110,16 +110,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define Lepton_I2C_GPIO_Mode_Vsync 5
 
 //Page 104
-#define Lepton_I2C_Command_GPIO_Mode_Get (0x4858)
-#define Lepton_I2C_Command_GPIO_Mode_Set (0x4859)
-#define Lepton_I2C_Vsync_Minus3 (-3)
-#define Lepton_I2C_Vsync_Minus2 (-2)
-#define Lepton_I2C_Vsync_Minus1 (-1)
-#define Lepton_I2C_Vsync_Minus0 (-0)
-
+#define Lepton_I2C_Command_Vsyncdelay_Get (0x4858)
+#define Lepton_I2C_Command_Vsyncdelay_Set (0x4859)
+#define Lepton_I2C_Vsyncdelay_Minus3 (-3)
+#define Lepton_I2C_Vsyncdelay_Minus2 (-2)
+#define Lepton_I2C_Vsyncdelay_Minus1 (-1)
+#define Lepton_I2C_Vsyncdelay_0      (0)
+#define Lepton_I2C_Vsyncdelay_Plus1  (1)
+#define Lepton_I2C_Vsyncdelay_Plus2  (2)
+#define Lepton_I2C_Vsyncdelay_Plus3  (3)
 
 //page 41
-#define Lepton_I2C_Write_Command_Ping 0x0202
+#define Lepton_I2C_Command_Ping 0x0202
 
 
 //Page 108
@@ -288,7 +290,7 @@ uint16_t Lepton_I2C_Get
       case Lepton_I2C_Stage_Start: 
       //Check status register to see if it is ok to request data now.
       Status = Lepton_I2C_Status (Device);
-      if (Status != htons (Lepton_I2C_Register_Status_Ok_Mask)) {break;}
+      if ((Status & htons (Lepton_I2C_Register_Status_Ok_Mask)) == 0) {break;}
       Lepton_I2C_Request (Device, Command, Size8);
       *Stage = Lepton_I2C_Stage_Request;
       
@@ -316,7 +318,7 @@ uint16_t Lepton_I2C_Set
       case Lepton_I2C_Stage_Start: 
       //Check status register to see if it is ok to request data now.
       Status = Lepton_I2C_Status (Device);
-      if (Status != htons (Lepton_I2C_Register_Status_Ok_Mask)) {break;}
+      if ((Status & htons (Lepton_I2C_Register_Status_Ok_Mask)) == 0) {break;}
       //TODO: Select and write can be done with a single transfer.
       //Lepton_I2C_Select (Device, Lepton_I2C_Register_Data_0);
       //Lepton_I2C_Write (Device, Data, Size8);
