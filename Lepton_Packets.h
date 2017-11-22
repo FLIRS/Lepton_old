@@ -191,3 +191,48 @@ int Lepton_Packet_Array_Check_Climbing_Number
    }
    return 1;
 }
+
+
+int Lepton_Packet_Validity 
+(
+   struct Lepton_Packet * Packet_Array, 
+   size_t Count
+)
+{
+   assert (Count == Lepton_Height);
+   for (size_t I = 0; I < Lepton_Height; I = I + 1)
+   {
+      if (Packet_Array [I].Reserved & 0x0F) 
+      {return 0;}
+      if (Packet_Array [I].Number >= Lepton_Height) 
+      {return 0;}
+      if (Lepton_Packet_Is_Match (Packet_Array + I) == 0) 
+      {return 0;}
+   }
+   return 1;
+}
+
+
+
+#include <stdio.h>
+
+void Lepton_Packet_Print (struct Lepton_Packet * Packet)
+{
+   printf ("Reserved %04x\n", Packet->Reserved);
+   printf ("Number   %04x\n", Packet->Number);
+   printf ("Checksum %04x\n", Packet->Checksum);
+   for (size_t I = 0; I < Lepton_Width; I = I + 1)
+   {
+      printf ("%04x ", Packet->Line [I]);
+   }
+}
+
+void Lepton_Packet_Print1 (struct Lepton_Packet * Packet)
+{
+   uint8_t * B = (uint8_t *)Packet;
+   for (size_t I = 0; I < Lepton_Packet_Size; I = I + 1)
+   {
+      printf ("%02x ", B [I]);
+   }
+}
+
