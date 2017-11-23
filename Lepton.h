@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
+//Can be used for segment info
 #define Lepton_Width 80
 #define Lepton_Height 60
 
@@ -36,10 +37,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define Lepton2_Nano_Seconds_Per_Frame (1000000000/27)
 #define Lepton3_Nano_Seconds_Per_Frame (1000000000/106)
 
-/*
-Page 34.
-Deassert /CS and idle SCK for at least 5 frame periods (>185 msec).
-This step ensures a timeout of the VoSPI interface, 
-which puts the Lepton in the proper state to establish (or re-establish) synchronization.
-*/
+
+//Page 34.
+//Deassert /CS and idle SCK for at least 5 frame periods (>185 msec).
+//This step ensures a timeout of the VoSPI interface, 
+//which puts the Lepton in the proper state to establish (or re-establish) synchronization.
 #define Lepton_Synchronization_Idle_Microseconds 200000

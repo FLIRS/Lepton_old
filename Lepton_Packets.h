@@ -20,22 +20,37 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
+
+//Using:
+//Lepton_Width
+//Lepton_Packet_Size
 #include "Lepton.h"
+
+//Using:
+//Lepton_CRC16_CCITT
 #include "Lepton_CRC16_CCITT.h"
 
+//Using:
+//assert
 #include <assert.h>
 
-//For using: uint8_t, uint16_t
+//Using: 
+//uint8_t
+//uint16_t
 #include <stdint.h>
 
-//For using: size_t
+//Using: 
+//size_t
 #include <stddef.h>
 
-//For using: ntohs
-#include <netinet/in.h>
+//Using: 
+//be16toh
+#include <endian.h>
+
 
 //Each packet is the same size.
 #define Lepton_Packet_Size 164
+
 
 //Payload size it the size of the data in each packets.
 #define Lepton_Packet_Payload_Size 160
@@ -77,10 +92,13 @@ struct __attribute__((__packed__)) Lepton_Packet
 int Lepton_Packet_Is_Match (struct Lepton_Packet * Packet)
 {
    int Success;
+   
+   //Might not be necessary.
+   //This holds segment number value at packet 20.
    uint8_t Preserve_Reserved = Packet->Reserved;
-   //Checksum is larger than 16 bit so convert it from 
-   //network byte order to host byte order.
-   uint16_t Checksum = ntohs (Packet->Checksum);
+   
+   //Checksum is big endian. Convert byte order to host.
+   uint16_t Checksum = be16toh (Packet->Checksum);
    
    //FLIR Lepton Datasheet Page 31.
    //The four most-significant bits of the ID are set to zero 
@@ -97,9 +115,8 @@ int Lepton_Packet_Is_Match (struct Lepton_Packet * Packet)
    //Checksum > 0 might not be useful here.
    Success = (Checksum > 0 && Checksum == Lepton_CRC16_CCITT ((uint8_t *) Packet, sizeof (struct Lepton_Packet), 0, 0));
    
-   //Checksum is matching.
-   //Restore the checksum.
-   Packet->Checksum = htons (Checksum);
+   //Restore Checksum and Reserved.
+   Packet->Checksum = htobe16 (Checksum);
    Packet->Reserved = Preserve_Reserved;
 
    return Success;
@@ -120,100 +137,35 @@ int Lepton_Packet_Is_First (struct Lepton_Packet * Packet)
 int Lepton_Packet_Is_Discard (struct Lepton_Packet * Packet)
 {
    //This checks if the packet is a discard packet.
+   //Lepton Datasheet Page 41 - Packet Header Encoding.
    return (Packet->Reserved & 0x0F) == 0x0F;
 }
 
 
-//Return 0 when no row is not valid
+//Return 0 when row is not valid
 //Return 1 when row is valid
-int Lepton_Packet_Is_Row_Valid (struct Lepton_Packet * Packet)
+int Lepton_Packet_Is_Row (struct Lepton_Packet * Packet)
 {
    return (Packet->Number >= 0) && (Packet->Number < Lepton_Height);
 }
 
 
-//Return 0 when CRC mismatch
-//Return 1 when CRC match
-int Lepton_Packet_Array_Is_Match (struct Lepton_Packet * Packet, size_t Count)
-{
-   size_t N = 0;
-   for (int I = 0; I < Count; I = I + 1)
-   {
-      if (Lepton_Packet_Is_Match (Packet + I))
-      {
-         N = N + 1;
-      }
-   }
-   return N;
-}
-
-
-//Return 0 when no row is not valid
-//Return 1 when row is valid
-int Lepton_Packet_Array_Is_Row_Valid (struct Lepton_Packet * Packet, size_t Count)
-{
-   for (int I = 0; I < Count; I = I + 1)
-   {
-      if (0 == Lepton_Packet_Is_Row_Valid (Packet + I))
-      {
-         return 0;
-      }
-   }
-   return 1;
-}
-
-
-void Lepton_Packet_Net_To_Host (struct Lepton_Packet * Packet)
+//Convert the packet to host byte order.
+void Lepton_Packet_To_Host (struct Lepton_Packet * Packet)
 {
    for (int I = 0; I < Lepton_Width; I = I + 1)
    {
-      //Everything larger than 8 bit need be converted from network byte order to host byte order.
-      Packet->Line [I] = ntohs (Packet->Line [I]);
+      //Everything larger than 8 bit need be converted 
+      //from big endian byte order to host byte order.
+      Packet->Line [I] = be16toh (Packet->Line [I]);
    }
 }
 
 
-//Check if the packets are ordered from 0 .. 59
-int Lepton_Packet_Array_Check_Climbing_Number 
-(
-   struct Lepton_Packet * Packet_Array, 
-   size_t Count
-)
-{
-   for (int I = 0; I < (Count - 1); I = I + 1)
-   {
-      uint8_t X0 = Packet_Array [I + 0].Number;
-      uint8_t X1 = Packet_Array [I + 1].Number;
-      if ((X0 + 1) != X1)
-      {
-         return 0;
-      }
-   }
-   return 1;
-}
-
-
-int Lepton_Packet_Validity 
-(
-   struct Lepton_Packet * Packet_Array, 
-   size_t Count
-)
-{
-   assert (Count == Lepton_Height);
-   for (size_t I = 0; I < Lepton_Height; I = I + 1)
-   {
-      if (Packet_Array [I].Reserved & 0x0F) 
-      {return 0;}
-      if (Packet_Array [I].Number >= Lepton_Height) 
-      {return 0;}
-      if (Lepton_Packet_Is_Match (Packet_Array + I) == 0) 
-      {return 0;}
-   }
-   return 1;
-}
 
 
 
+//Temporary:
 #include <stdio.h>
 
 void Lepton_Packet_Print (struct Lepton_Packet * Packet)
@@ -227,6 +179,7 @@ void Lepton_Packet_Print (struct Lepton_Packet * Packet)
    }
 }
 
+
 void Lepton_Packet_Print1 (struct Lepton_Packet * Packet)
 {
    uint8_t * B = (uint8_t *)Packet;
@@ -235,4 +188,3 @@ void Lepton_Packet_Print1 (struct Lepton_Packet * Packet)
       printf ("%02x ", B [I]);
    }
 }
-

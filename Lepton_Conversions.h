@@ -18,19 +18,31 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
+// Using:
+// Lepton_Width
+// Lepton_Height
 #include "Lepton.h"
-#include "Lepton_Pixels.h"
-#include "Lepton_Map.h"
 
-//memcpy
+// Using:
+// struct Lepton_Packet
+// Lepton_Packet_Is_Row
+#include "Lepton_Packets.h"
+
+// Using:
+// struct Lepton_Pixel_Grayscale16
+#include "Lepton_Pixels.h"
+
+// Using:
+// memcpy
 #include <string.h>
 
-//assert
+// Using:
+// assert
 #include <assert.h>
 
-//uint8_t
+// Using:
+// uint8_t
 #include <stdint.h>
-#include <stdio.h>
 
 
 //Copy and convert the <Packet> video line to a portion of the <Pixmap> 
@@ -39,45 +51,25 @@ void Lepton_Conversions_Packet_To_Grayscale16
 (
    struct Lepton_Packet * Packet, 
    struct Lepton_Pixel_Grayscale16 * Pixmap,
-   uint8_t Segment
+   uint8_t Segment_Number
 )
 {
    //The row must be valid because it is used to 
    //position video line in pixmap.
-   assert (Lepton_Packet_Is_Row_Valid (Packet));
+   assert (Lepton_Packet_Is_Row (Packet));
    
-   //Packet data is by default network order.
-   //This might change in the future.
-   Lepton_Packet_Net_To_Host (Packet);
+   //Segment_Number must be inside 0 .. 3
+   assert (0 <= Segment_Number && Segment_Number <= 3);
+   
+   //Pixels values are 16b big endian.
+   //Convert pixel values to host byte order.
+   Lepton_Packet_To_Host (Packet);
    
    //Assign video line to correct position in the pixmap.
    memcpy 
    (
-      Pixmap + (Segment * Lepton_Height * Lepton2_Width + Lepton_Width * Packet->Number), 
+      Pixmap + (Segment_Number * Lepton_Height * Lepton_Width + Lepton_Width * Packet->Number), 
       Packet->Payload, 
       Lepton_Packet_Payload_Size
    );
 }
-
-
-void Lepton_Conversions_Frame_To_Grayscale16 
-(
-   struct Lepton_Packet * Packet_Array, 
-   struct Lepton_Pixel_Grayscale16 * Pixmap
-)
-{
-   for (size_t I = 0; I < Lepton_Height; I = I + 1)
-   {
-      assert (Lepton_Packet_Is_Row_Valid (Packet_Array + I));
-      Lepton_Packet_Net_To_Host (Packet_Array + I);
-      memcpy 
-      (
-         Pixmap + (Lepton_Width * I), 
-         Packet_Array [I].Payload, 
-         Lepton_Packet_Payload_Size
-      );
-   }
-}
-
-
-

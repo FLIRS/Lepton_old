@@ -25,35 +25,38 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <linux/spi/spidev.h>
 #include <libexplain/open.h>
 #include <assert.h>
+#include <string.h>
 
-/*
-Lepton FLIR Datasheet page 29.
-"The Lepton uses SPI Mode 3 (CPOL=1, CPHA=1)".
-"SCK is HIGH when idle."
-*/
+#include "Lepton_Packets.h"
+
+
+//Lepton FLIR Datasheet page 29.
+//"The Lepton uses SPI Mode 3 (CPOL=1, CPHA=1)".
+//"SCK is HIGH when idle."
 #define Lepton_SPI_Mode SPI_MODE_3
 
-/*
-Page 30.
-The maximum clock rate is 20 MHz.
-*/
+
+//Page 30.
+//The maximum clock rate is 20 MHz.
 #define Lepton_SPI_Speed_Max 20000000
 
-/*
-Page 30.
-The minimum clock rate is a function of the number of bits of data per frame that need to be retrieved.
-As described in the sections that follow, the number of bits of data varies 
-depending upon user settings (video format mode, telemetry mode).
-For default conditions (Raw14 mode, telemetry disabled), 
-there are 60 video packets per frame, 
-each 1312 bits long, at approximately 25.9 frames per second.
-Therefore, the minimum rate is on the order of 2 MHz.
-*/
-#define Lepton_SPI_Speed_Min 2000000
 
+//Page 30.
+//The minimum clock rate is a function of the number of bits of data per frame that need to be retrieved.
+//As described in the sections that follow, the number of bits of data varies 
+//depending upon user settings (video format mode, telemetry mode).
+//For default conditions (Raw14 mode, telemetry disabled), 
+//there are 60 video packets per frame, 
+//each 1312 bits long, at approximately 25.9 frames per second.
+//Therefore, the minimum rate is on the order of 2 MHz.
+#define Lepton_SPI_Speed_Min 2000000
 #define Lepton_SPI_Speed_Recomended 16000000
 
+
+//TODO: Why 8 bit?
 #define Lepton_SPI_Bits_Per_Word 8
+
+
 
 int Lepton_SPI_Open (char const * Name)
 {
@@ -93,13 +96,59 @@ int Lepton_SPI_Open (char const * Name)
 }
 
 
-void Lepton_SPI_Transfer 
+void Lepton_SPI_Transfer_Init 
 (
-   int Device,
-   struct spi_ioc_transfer * Transfer
+   struct spi_ioc_transfer * Transfer,
+   struct Lepton_Packet * Data,
+   size_t Count,
+   size_t Speed
 )
 {
+   memset (Transfer, 0, sizeof (struct spi_ioc_transfer));
+   Transfer->tx_buf        = (unsigned long) NULL;
+   Transfer->rx_buf        = (unsigned long) Data;
+   Transfer->len           = sizeof (struct Lepton_Packet) * Count;
+   Transfer->delay_usecs   = 0;
+   Transfer->speed_hz      = Speed;
+   Transfer->bits_per_word = Lepton_SPI_Bits_Per_Word;
+   Transfer->cs_change     = 0;
+   Transfer->pad           = 0;
+}
+
+
+
+//Return 0 when not successful.
+//Return 1 when successful.
+//Receive <Count> number of uint8_t <Data> from SPI <Device>
+int Lepton_SPI_Transfer_Stream8 
+(uint8_t * Data, size_t Count, int Device)
+{
+   struct spi_ioc_transfer Transfer =
+   {
+      .tx_buf = (unsigned long) NULL,
+      .rx_buf = (unsigned long) Data,
+      .len = Count,
+      .delay_usecs = 0,
+      .speed_hz = Lepton_SPI_Speed_Max,
+      .bits_per_word = Lepton_SPI_Bits_Per_Word
+   };
+   
+   //memset might not be useful here.
+   memset ((void *) Data, 0, Count);
+   
+   int Result = ioctl (Device, SPI_IOC_MESSAGE (1), &Transfer);
+   
+   return (Result == Count);
+}
+
+
+//Return 0 when not successful.
+//Return 1 when successful.
+//Receive <Count> number of Lepton_Packet <Stream> from SPI <Device>
+int Lepton_SPI_Transfer_Stream 
+(struct Lepton_Packet * Stream, size_t Count, int Device)
+{
    int Result;
-   Result = ioctl (Device, SPI_IOC_MESSAGE (1), Transfer);
-   assert (Result == Transfer->len);
+   Result = Lepton_SPI_Transfer_Stream8 ((uint8_t *) Stream, sizeof (struct Lepton_Packet) * Count, Device);
+   return Result;
 }
