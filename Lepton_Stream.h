@@ -15,7 +15,8 @@
 int Lepton_Stream_Check_Climbing_Number 
 (struct Lepton_Packet * Stream, size_t Count)
 {
-   for (int I = 0; I < (Count - 1); I = I + 1)
+   assert (Count > 0);
+   for (size_t I = 0; I < (Count - 1); I = I + 1)
    {
       uint8_t X0 = Stream [I + 0].Number;
       uint8_t X1 = Stream [I + 1].Number;

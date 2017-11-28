@@ -25,6 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <linux/spi/spidev.h>
 #include <assert.h>
 #include <string.h>
+#include <errno.h>
 
 #include "Lepton_Packets.h"
 
@@ -114,7 +115,8 @@ void Lepton_SPI_Transfer_Init
    Transfer->pad           = 0;
 }
 
-
+#include <stdio.h>
+#include <string.h>
 
 //Return 0 when not successful.
 //Return 1 when successful.
@@ -122,22 +124,31 @@ void Lepton_SPI_Transfer_Init
 int Lepton_SPI_Transfer_Stream8 
 (uint8_t * Data, size_t Count, int Device)
 {
-   struct spi_ioc_transfer Transfer =
-   {
-      .tx_buf = (unsigned long) NULL,
-      .rx_buf = (unsigned long) Data,
-      .len = Count,
-      .delay_usecs = 0,
-      .speed_hz = Lepton_SPI_Speed_Max,
-      .bits_per_word = Lepton_SPI_Bits_Per_Word
-   };
+   struct spi_ioc_transfer Transfer;
+   memset ((void *) &Transfer, 0, sizeof (struct spi_ioc_transfer));
+   
+   Transfer.tx_buf = (unsigned long) NULL;
+   Transfer.rx_buf = (unsigned long) Data;
+   Transfer.len = Count;
+   Transfer.delay_usecs = 0;
+   Transfer.speed_hz = Lepton_SPI_Speed_Max;
+   Transfer.bits_per_word = Lepton_SPI_Bits_Per_Word;
+   Transfer.cs_change = 0;
+   Transfer.pad = 0;
+
    
    //memset might not be useful here.
    memset ((void *) Data, 0, Count);
-   
+   //errno = 0;
    int Result = ioctl (Device, SPI_IOC_MESSAGE (1), &Transfer);
+   if (errno != 0)
+   {
+      //printf ("errno %i : %s\n", errno, strerror (errno));
+      //printf ("Device %i\n", Device);
+      //assert (0);
+   }
    
-   return (Result == Count);
+   return (Result == (int) Count);
 }
 
 
