@@ -48,7 +48,7 @@ void Lepton_Strings_Base_Converter (int Value, char * String, size_t Size, size_
 
 
 
-void Lepton_Strings_Base_printf (int Value, size_t Width, size_t Base, char * Format)
+void Lepton_Strings_Base_printf (int Value, size_t Width, size_t Base, char const * Format)
 {
    char Buffer [100] = {'\0'};
    assert (Width < sizeof (Buffer));
@@ -60,7 +60,7 @@ void Lepton_Strings_Base_printf (int Value, size_t Width, size_t Base, char * Fo
 
 
 
-char * Lepton_Strings_Command (int Command)
+char const * Lepton_Strings_Command (int Command)
 {
    switch (Command)
    {
@@ -80,7 +80,7 @@ char * Lepton_Strings_Command (int Command)
 }
 
 
-char * Lepton_Strings_FFC_Profile (int Command)
+char const * Lepton_Strings_FFC_Profile (int Command)
 {
    switch (Command)
    {
@@ -96,7 +96,7 @@ char * Lepton_Strings_FFC_Profile (int Command)
 }
 
 
-char * Lepton_Strings_FFC_Status (int Command)
+char const * Lepton_Strings_FFC_Status (int Command)
 {
    switch (Command)
    {

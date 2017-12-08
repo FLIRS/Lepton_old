@@ -30,6 +30,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //size_t
 #include <sys/types.h>
 
+//ioctl
+#include <sys/ioctl.h>
+
 //errno
 #include <errno.h>
 
@@ -39,7 +42,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //htons
 #include <arpa/inet.h>
 
-#include <stdio.h>
+//assert
+#include <assert.h>
 
 
 //I2C settings.
@@ -234,7 +238,7 @@ void Lepton_I2C_Write_Length
    assert ((Size8 % 2) == 0);
    uint16_t Size16 = Size8 / sizeof (uint16_t);
    uint16_t Buffer [] = {htons (Lepton_I2C_Register_Length), htons (Size16)};
-   Lepton_I2C_Write (Device, (void *) Buffer, sizeof (Buffer));
+   Lepton_I2C_Write (Device, (uint8_t *) Buffer, sizeof (Buffer));
 }
 
 
