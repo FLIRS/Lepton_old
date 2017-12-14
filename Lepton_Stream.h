@@ -50,29 +50,40 @@ int Lepton_Stream_Validity
 
 
 #define Lepton_Stream_Invalid_Segment   (0)
-#define Lepton_Stream_Invalid           (-1)
-#define Lepton_Stream_Shifting          (-2)
-#define Lepton_Stream_SPI_Error         (-3)
+#define Lepton_Stream_Discard           (-1)
+#define Lepton_Stream_Mismatch          (-2)
+#define Lepton_Stream_Invalid_Row       (-3)
+#define Lepton_Stream_Shifting          (-4)
+#define Lepton_Stream_SPI_Error         (-5)
 
+//Assigns the segment pixel map to correct position in `Pixmap`.
+//Automaticly shifting the stream when the stream has an offset.
+//Returns `Lepton_Stream_Shifting` when the stream has an offset.
+//Returns the segment number `1 .. 4` on succesful.
+//Returns error code on error.
 int Lepton_Stream_Accept (int Device, struct Lepton_Pixel_Grayscale16 * Pixmap)
 {
-   struct Lepton_Packet Packet [Lepton_Height];
+   struct Lepton_Packet Stream [Lepton_Height];
    int Success;
    int Segment;
-   Success = Lepton_SPI_Transfer_Stream (Packet, Lepton_Height, Device);
+   Success = Lepton_SPI_Transfer_Stream (Stream, Lepton_Height, Device);
    if (!Success) {return Lepton_Stream_SPI_Error;}
-   Success = Lepton_Stream_Validity (Packet, Lepton_Height);
-   if (!Success) {return Lepton_Stream_Invalid;}
-   if (Packet [20].Number != 20)
+   for (size_t I = 0; I < Lepton_Height; I = I + 1)
    {
-      Lepton_SPI_Transfer_Stream (Packet, 1, Device);
+      if (Lepton_Packet_Is_Discard (Stream + I) == 1) {return Lepton_Stream_Discard;}
+      if (Lepton_Packet_Is_Row     (Stream + I) == 0) {return Lepton_Stream_Invalid_Row;}
+      if (Lepton_Packet_Is_Match   (Stream + I) == 0) {return Lepton_Stream_Mismatch;}
+   }
+   if (Stream [20].Number != 20)
+   {
+      Lepton_SPI_Transfer_Stream (Stream, 1, Device);
       return Lepton_Stream_Shifting;
    }
-   Segment = Packet [20].Reserved >> 4;
+   Segment = Stream [20].Reserved >> 4;
    if ((Segment <= 0) || (Segment > 4)) {return Lepton_Stream_Invalid_Segment;}
    for (size_t I = 0; I < Lepton_Height; I = I + 1)
    {
-      Lepton_Conversions_Packet_To_Grayscale16 (Packet + I, Pixmap, Segment - 1);
+      Lepton_Conversions_Packet_To_Grayscale16 (Stream + I, Pixmap, Segment - 1);
    }
    return Segment;
 }
