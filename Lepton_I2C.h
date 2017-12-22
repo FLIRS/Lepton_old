@@ -45,6 +45,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //assert
 #include <assert.h>
 
+//memcpy
+#include <string.h>
+
 
 //I2C settings.
 //Page 14.
@@ -128,17 +131,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define Lepton_I2C_Command_Ping 0x0202
 
 
-//Page 108
+//OEM Restore User Defaults.
+//Page 108. Section 4.6.18
+//This function will restore the OEM user defualts from OTP if OTP was previosly written with these defaults.
+//If user defaults ware not written, an error code is returned.
 #define Lepton_I2C_Command_Restore_User_Defaults (0x4862)
 
 
+//Auxiliry help function.
 #define Lepton_Bit_Subset(Value,Mask) (((Value) & (Mask)) == (Mask))
 
 
-#define Lepton_I2C_Stage_Error -1
-#define Lepton_I2C_Stage_Start 1
-#define Lepton_I2C_Stage_Request 2
-#define Lepton_I2C_Stage_Complete 3
+//Comand Type
+//Page 18. Section 2.1.3.4
+//A command type specifies what the command does.
+#define Lepton_I2C_Command_Type_Get 0x00
+#define Lepton_I2C_Command_Type_Set 0x01
+#define Lepton_I2C_Command_Type_Run 0x02
+#define Lepton_I2C_Command_Type_Mask 0x03
+ 
 
 
 struct __attribute__((__packed__)) Lepton_I2C_FFC_Status
@@ -159,7 +170,7 @@ struct __attribute__((__packed__)) Lepton_I2C_Uptime_100s
 
 struct __attribute__((__packed__)) Lepton_I2C_GPIO_Mode
 {
-   uint32_t Value;
+   uint16_t Value;
 };
 
 struct __attribute__((__packed__)) Lepton_I2C_Shutter_Mode 
@@ -237,7 +248,7 @@ void Lepton_I2C_Write_Length
    //We must write two 8b for every 16b.
    assert ((Size8 % 2) == 0);
    uint16_t Size16 = Size8 / sizeof (uint16_t);
-   uint16_t Buffer [] = {htons (Lepton_I2C_Register_Length), htons (Size16)};
+   uint16_t Buffer [] = {htons (Lepton_I2C_Register_Length), htobe16 (Size16)};
    Lepton_I2C_Write (Device, (uint8_t *) Buffer, sizeof (Buffer));
 }
 
@@ -248,18 +259,8 @@ void Lepton_I2C_Write_Command
 {
    //First 16 bit selects the register to write to.
    //The rest goes to that register.
-   uint16_t Buffer [] = {htons (Lepton_I2C_Register_Command), htons (Command)};
+   uint16_t Buffer [] = {htons (Lepton_I2C_Register_Command), htobe16 (Command)};
    Lepton_I2C_Write (Device, (uint8_t *) Buffer, sizeof (Buffer));
-}
-
-
-//Requests data by writing a command to command register 
-//and size to length register.
-void Lepton_I2C_Request 
-(int Device, uint16_t Command, uint16_t Size)
-{
-   Lepton_I2C_Write_Length (Device, Size);
-   Lepton_I2C_Write_Command (Device, Command);
 }
 
 
@@ -276,70 +277,64 @@ uint16_t Lepton_I2C_Status (int Device)
 
 
 //Run a command with checking
-void Lepton_I2C_Run 
-(int Device, uint16_t Command)
+void Lepton_I2C_Execute1 
+(int Device, uint16_t Command, void * Data, size_t Size8)
 {
-   //TODO: Check status.
-   Lepton_I2C_Write_Command (Device, Command);
-   //TODO: Check status.
+   struct __attribute__((__packed__))
+   {
+      uint16_t Register;
+      uint16_t Data [16];
+   } Bank;
+   switch (Command & Lepton_I2C_Command_Type_Mask)
+   {
+      case Lepton_I2C_Command_Type_Get:
+         Lepton_I2C_Write_Length (Device, Size8);
+         Lepton_I2C_Write_Command (Device, Command);
+         break;
+         
+      case Lepton_I2C_Command_Type_Set:
+         Bank.Register = htobe16 (Lepton_I2C_Register_Data_0);
+         assert (Size8 <= 16);
+         memcpy (Bank.Data, Data, Size8);
+         Lepton_I2C_Write (Device, (uint8_t *) &Bank, Size8 + sizeof (uint16_t));
+         Lepton_I2C_Write_Length (Device, Size8);
+         Lepton_I2C_Write_Command (Device, Command);
+         break;
+         
+      case Lepton_I2C_Command_Type_Run:
+         Lepton_I2C_Write_Command (Device, Command);
+         break;
+   };
 }
 
 
-uint16_t Lepton_I2C_Get 
-(int Device, uint16_t Command, uint8_t * Data, size_t Size8, int * Stage)
+void Lepton_I2C_Execute
+(int Device, uint16_t Command, void * Data, size_t Size8, uint16_t * Status, int * Stage)
 {
-   uint16_t Status;
    switch (*Stage)
    {
-      case Lepton_I2C_Stage_Start: 
-      //Check status register to see if it is ok to request data now.
-      Status = Lepton_I2C_Status (Device);
-      if ((Status & htons (Lepton_I2C_Register_Status_Ok_Mask)) == 0) {break;}
-      Lepton_I2C_Request (Device, Command, Size8);
-      *Stage = Lepton_I2C_Stage_Request;
+      case 0:
+      *Stage = 1;
       
-      case Lepton_I2C_Stage_Request:
-      Lepton_I2C_Select (Device, Lepton_I2C_Register_Data_0);
-      Lepton_I2C_Read (Device, Data, Size8);
-      //Check status register to see if the readed data was successful.
-      Status = Lepton_I2C_Status (Device);
-      if (Status != htons (Lepton_I2C_Register_Status_Ok_Mask)) {break;}
-      *Stage = Lepton_I2C_Stage_Complete;
-      
-      case Lepton_I2C_Stage_Complete:
-      break;
-   }
-   return Status;
+      case 1:
+         //First check if it is busy or not.
+         *Status = Lepton_I2C_Status (Device);
+         if ((*Status & htobe16 (Lepton_I2C_Register_Status_Ok_Mask)) == 0) {return;}
+         //It is not busy then carry out the command.
+         Lepton_I2C_Execute1 (Device, Command, Data, Size8);
+         *Stage = 2;
+         
+      case 2:
+         //Check if command is finnished.
+         *Status = Lepton_I2C_Status (Device);
+         if ((*Status & htobe16 (Lepton_I2C_Register_Status_Ok_Mask)) == 0) {return;}
+         if ((Command & Lepton_I2C_Command_Type_Mask) == Lepton_I2C_Command_Type_Get)
+         {
+            Lepton_I2C_Select (Device, Lepton_I2C_Register_Data_0);
+            Lepton_I2C_Read (Device, Data, Size8);
+         }
+         //Command is finnished.
+         *Stage = 0;
+   };
 }
-
-
-uint16_t Lepton_I2C_Set 
-(int Device, uint16_t Command, uint8_t * Data, size_t Size8, int * Stage)
-{
-   uint16_t Status;
-   switch (*Stage)
-   {
-      case Lepton_I2C_Stage_Start: 
-      //Check status register to see if it is ok to request data now.
-      Status = Lepton_I2C_Status (Device);
-      if ((Status & htons (Lepton_I2C_Register_Status_Ok_Mask)) == 0) {break;}
-      //TODO: Select and write can be done with a single transfer.
-      //Lepton_I2C_Select (Device, Lepton_I2C_Register_Data_0);
-      //Lepton_I2C_Write (Device, Data, Size8);
-      Lepton_I2C_Request (Device, Command, Size8);
-      *Stage = Lepton_I2C_Stage_Request;
-      
-      case Lepton_I2C_Stage_Request:
-      //Check status register to see if setting data was successful.
-      Status = Lepton_I2C_Status (Device);
-      if (Status != htons (Lepton_I2C_Register_Status_Ok_Mask)) {break;}
-      *Stage = Lepton_I2C_Stage_Complete;
-      
-      case Lepton_I2C_Stage_Complete:
-      break;
-   }
-   return Status;
-}
-
-
 

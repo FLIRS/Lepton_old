@@ -58,7 +58,7 @@ int Lepton_Stream_Validity
 
 //Assigns the segment pixel map to correct position in `Pixmap`.
 //Automaticly shifting the stream when the stream has an offset.
-//Returns `Lepton_Stream_Shifting` when the stream has an offset.
+//Returns `Lepton_Stream_Shifting` when the stream is shifting.
 //Returns the segment number `1 .. 4` on succesful.
 //Returns error code on error.
 int Lepton_Stream_Accept (int Device, struct Lepton_Pixel_Grayscale16 * Pixmap)
