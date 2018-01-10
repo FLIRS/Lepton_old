@@ -48,13 +48,13 @@ void Lepton_Strings_Base_Converter (int Value, char * String, size_t Size, size_
 
 
 
-void Lepton_Strings_Base_printf (int Value, size_t Width, size_t Base, char const * Format)
+void Lepton_Strings_Base_printf (FILE * File, int Value, size_t Width, size_t Base, char const * Format)
 {
    char Buffer [100] = {'\0'};
    assert (Width < sizeof (Buffer));
    memset (Buffer, '0', Width);
    Lepton_Strings_Base_Converter (Value, Buffer, Width, Base);
-   printf (Format, Buffer);
+   fprintf (File, Format, Buffer);
 }
 
 

@@ -78,6 +78,7 @@ void Lepton_App_Reboot (struct Lepton_App * App)
 }
 
 
+//
 void Lepton_App_Update (struct Lepton_App * App)
 {
    App->Pulse_Count ++;
@@ -105,6 +106,7 @@ void Lepton_App_Update (struct Lepton_App * App)
    }
    
    //Check if the camera goes haywire.
+   //There should only be 4 segment (*3 if US Export restriction) per frame in Lepton 3.
    if (App->Segment_Per_Frame > 300)
    {
       Lepton_App_Reboot (App);
