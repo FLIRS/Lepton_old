@@ -154,13 +154,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define Lepton_I2C_Command_Type_Mask 0x03
 
 
-enum Lepton_Debug
-{
-   Lepton_Debug0,
-   Lepton_Debug1,
-   Lepton_Debug2
-};
-
 
 struct __attribute__((__packed__)) Lepton_I2C_FFC_Status
 {
@@ -210,15 +203,33 @@ struct __attribute__((__packed__)) Lepton_I2C_Shutter_Mode
 int Lepton_I2C_Open (enum Lepton_Debug Debug, char const * Name)
 {
    int Device;
+   errno = 0;
    Device = open (Name, O_RDWR);
-   assert (Device != -1);
+   if (Debug & Lepton_Debug_stderr)
    {
-      int Result;
-      Result = ioctl (Device, I2C_SLAVE, Lepton_I2C_Address);
+      if (errno != 0) {Lepton_Print_Error (stderr, Device, errno);}
+   }
+   if (Debug & Lepton_Debug_assert)
+   {
+      assert (errno == 0);
+      assert (Device != -1);
+   }
+   int Result;
+   errno = 0;
+   Result = ioctl (Device, I2C_SLAVE, Lepton_I2C_Address);
+   if (Debug & Lepton_Debug_stderr)
+   {
+      if (errno != 0) {Lepton_Print_Error (stderr, Result, errno);}
+   }
+   if (Debug & Lepton_Debug_assert)
+   {
+      assert (errno == 0);
       assert (Result == 0);
    }
+   
    return Device;
 }
+
 
 //Read.
 int Lepton_I2C_Read 
@@ -227,17 +238,14 @@ int Lepton_I2C_Read
    int Result;
    errno = 0;
    Result = read (Device, (void *) Data, Size8);
-   switch (Debug)
+   if (Debug & Lepton_Debug_stderr)
    {
-      case Lepton_Debug0:
-      break;
-      
-      case Lepton_Debug1:
-         if (errno != 0) {Lepton_Print_Error (stderr, Result, errno);}
-      case Lepton_Debug2:
-         assert (errno == 0);
-         assert (Result == Size8);
-      break;
+      if (errno != 0) {Lepton_Print_Error (stderr, Result, errno);}
+   }
+   if (Debug & Lepton_Debug_assert)
+   {
+      assert (errno == 0);
+      assert (Result == Size8);
    }
    return Result;
 }
@@ -250,17 +258,14 @@ int Lepton_I2C_Write
    int Result;
    errno = 0;
    Result = write (Device, (void *) Data, Size8);
-   switch (Debug)
+   if (Debug & Lepton_Debug_stderr)
    {
-      case Lepton_Debug0:
-      break;
-      
-      case Lepton_Debug1:
-         if (errno != 0) {Lepton_Print_Error (stderr, Result, errno);}
-      case Lepton_Debug2:
-         assert (errno == 0);
-         assert (Result == Size8);
-      break;
+      if (errno != 0) {Lepton_Print_Error (stderr, Result, errno);}
+   }
+   if (Debug & Lepton_Debug_assert)
+   {
+      assert (errno == 0);
+      assert (Result == Size8);
    }
    return Result;
 }
