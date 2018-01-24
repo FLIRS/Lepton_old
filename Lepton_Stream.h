@@ -9,6 +9,7 @@
 #include "Lepton_SPI.h"
 #include "Lepton_Pixels.h"
 #include "Lepton_Conversions.h"
+#include "Lepton_Error.h"
 
 //Using:
 //size_t
@@ -49,12 +50,12 @@ int Lepton_Stream_Validity
 
 
 
-#define Lepton_Stream_Invalid_Segment   (0)
-#define Lepton_Stream_Discard           (-1)
-#define Lepton_Stream_Mismatch          (-2)
-#define Lepton_Stream_Invalid_Row       (-3)
-#define Lepton_Stream_Shifting          (-4)
-#define Lepton_Stream_SPI_Error         (-5)
+#define Lepton_Stream_Invalid_Segment   (-1)
+#define Lepton_Stream_Discard           (-2)
+#define Lepton_Stream_Mismatch          (-3)
+#define Lepton_Stream_Invalid_Row       (-4)
+#define Lepton_Stream_Shifting          (-5)
+#define Lepton_Stream_SPI_Error         (-6)
 
 //Assigns the segment pixel map to correct position in `Pixmap`.
 //Automaticly shifting the stream when the stream has an offset.
@@ -64,10 +65,13 @@ int Lepton_Stream_Validity
 int Lepton_Stream_Accept (int Device, struct Lepton_Pixel_Grayscale16 * Pixmap)
 {
    struct Lepton_Packet Stream [Lepton_Height];
-   int Success;
-   int Segment;
-   Success = Lepton_SPI_Transfer_Stream (Stream, Lepton_Height, Device);
-   if (!Success) {return Lepton_Stream_SPI_Error;}
+   {
+      int Result;
+      Result = Lepton_SPI_Transfer_Stream8 ((uint8_t *) Stream, sizeof (Stream), Device);
+      Lepton_Assert (Result == sizeof (Stream), 1, "Device %i. Lepton_SPI_Transfer_Stream8", Device);
+      if (Result != sizeof (Stream)) {return Result;}
+   }
+   
    for (size_t I = 0; I < Lepton_Height; I = I + 1)
    {
       if (Lepton_Packet_Is_Discard (Stream + I) == 1) {return Lepton_Stream_Discard;}
@@ -79,6 +83,8 @@ int Lepton_Stream_Accept (int Device, struct Lepton_Pixel_Grayscale16 * Pixmap)
       Lepton_SPI_Transfer_Stream (Stream, 1, Device);
       return Lepton_Stream_Shifting;
    }
+   
+   int Segment;
    Segment = Stream [20].Reserved >> 4;
    if ((Segment <= 0) || (Segment > 4)) {return Lepton_Stream_Invalid_Segment;}
    for (size_t I = 0; I < Lepton_Height; I = I + 1)

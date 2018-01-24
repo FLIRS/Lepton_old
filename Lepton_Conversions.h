@@ -59,7 +59,8 @@ void Lepton_Conversions_Packet_To_Grayscale16
    assert (Lepton_Packet_Is_Row (Packet));
    
    //Segment_Number must be inside 0 .. 3
-   assert (0 <= Segment_Number && Segment_Number <= 3);
+   assert (Segment_Number <= 3);
+   //assert (0 <= Segment_Number && Segment_Number <= 3);
    
    //Pixels values are 16b big endian.
    //Convert pixel values to host byte order.

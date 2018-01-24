@@ -1,0 +1,34 @@
+project Test is
+
+   for Languages use ("C");
+   for Source_Dirs use (".");
+   for Object_Dir use "obj";
+   for Exec_Dir use "bin";
+   for Main use ("all.c", "test_vsync.c");
+   
+   package Builder is 
+   end Builder;
+   
+   package Compiler is
+      for Switches ("C") use 
+      (
+         "-Wno-missing-field-initializers",
+         "-Wno-error=unused-but-set-variable",
+         "-std=gnu11", 
+         "-fdiagnostics-color", 
+         "-Wall", 
+         "-Wextra", 
+         "-Wpedantic", 
+         --"-Wno-variadic-macros", --Does not help
+         "-Wshadow", 
+         "-Werror", 
+         "-Wshadow", 
+         "-march=native"
+      );
+   end Compiler;
+   
+   package Linker is
+      for Switches ("test_vsync.c") use ("-lwiringPi");
+   end Linker;
+   
+end Test;

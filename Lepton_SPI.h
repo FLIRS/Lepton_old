@@ -27,7 +27,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <string.h>
 #include <errno.h>
 
+#include "Lepton.h"
 #include "Lepton_Packets.h"
+#include "Lepton_Error.h"
 
 
 //Lepton FLIR Datasheet page 29.
@@ -66,31 +68,43 @@ int Lepton_SPI_Open (char const * Name)
    int SPI_Max_Speed = Lepton_SPI_Speed_Recomended;
    int Result;
    
-   
+   errno = 0;
    Device = open (Name, O_RDWR, S_IRUSR | S_IWUSR);
-   assert (Device != -1);
+   Lepton_Assert (Device != -1, 1, "open %s", Name);
+   if (Device < 0) {return Device;}
    
+   errno = 0;
    Result = ioctl (Device, SPI_IOC_WR_MODE, &Mode);
-   assert (Result != -1 && "can't set spi mode");
+   Lepton_Assert (Result != -1, 1, "Device %i. can't set spi mode", Device);
+   if (Result == -1) {return Device;}
    
+   errno = 0;
    Result = ioctl (Device, SPI_IOC_WR_MAX_SPEED_HZ, &SPI_Max_Speed);
-   assert (Result != -1 && "can't set max speed hz");
+   Lepton_Assert (Result != -1, 1,"Device %i. can't set max speed hz", Device);
+   if (Result == -1) {return Device;}
    
+   errno = 0;
    Result = ioctl (Device, SPI_IOC_WR_BITS_PER_WORD, &Bits_Per_Word);
-   assert (Result != -1 && "can't set bits per word");
+   Lepton_Assert (Result != -1, 1, "Device %i. can't set bits per word", Device);
+   if (Result == -1) {return Device;}
    
-   
+   errno = 0;
    Result = ioctl (Device, SPI_IOC_RD_MODE, &Mode);
-   assert (Result != -1 && "can't get spi mode");
-   assert (Mode == Lepton_SPI_Mode);
+   Lepton_Assert (Result != -1, 1, "Device %i. can't get spi mode", Device);
+   Lepton_Assert (Mode == Lepton_SPI_Mode, 1, "Device %i. ", Device);
+   if (Result == -1) {return Device;}
 
+   errno = 0;
    Result = ioctl (Device, SPI_IOC_RD_BITS_PER_WORD, &Bits_Per_Word);
-   assert (Result != -1 && "can't get bits per word");
-   assert (Bits_Per_Word == Lepton_SPI_Bits_Per_Word);
+   Lepton_Assert (Result != -1, 1, "Device %i. can't get bits per word", Device);
+   Lepton_Assert (Bits_Per_Word == Lepton_SPI_Bits_Per_Word, 1, "Device %i. ", Device);
+   if (Result == -1) {return Device;}
 
+   errno = 0;
    Result = ioctl (Device, SPI_IOC_RD_MAX_SPEED_HZ, &SPI_Max_Speed);
-   assert (Result != -1 && "can't get max speed hz");
-   assert (SPI_Max_Speed == Lepton_SPI_Speed_Recomended);
+   Lepton_Assert (Result != -1, 1, "Device %i. can't get max speed hz", Device);
+   Lepton_Assert (SPI_Max_Speed == Lepton_SPI_Speed_Recomended, 1, "Device %i. ", Device);
+   if (Result == -1) {return Device;}
 
    return Device;
 }
@@ -104,6 +118,7 @@ void Lepton_SPI_Transfer_Init
    size_t Speed
 )
 {
+   //SPI is unstable without zeroing the struct.
    memset (Transfer, 0, sizeof (struct spi_ioc_transfer));
    Transfer->tx_buf        = (unsigned long) NULL;
    Transfer->rx_buf        = (unsigned long) Data;
@@ -115,11 +130,9 @@ void Lepton_SPI_Transfer_Init
    Transfer->pad           = 0;
 }
 
-#include <stdio.h>
-#include <string.h>
 
-//Return 0 when not successful.
-//Return 1 when successful.
+//Return -1 when not successful.
+//Return Count when successful.
 //Receive <Count> number of uint8_t <Data> from SPI <Device>
 int Lepton_SPI_Transfer_Stream8 
 (uint8_t * Data, size_t Count, int Device)
@@ -139,21 +152,18 @@ int Lepton_SPI_Transfer_Stream8
    
    //memset might not be useful here.
    memset ((void *) Data, 0, Count);
-   //errno = 0;
-   int Result = ioctl (Device, SPI_IOC_MESSAGE (1), &Transfer);
-   if (errno != 0)
-   {
-      //printf ("errno %i : %s\n", errno, strerror (errno));
-      //printf ("Device %i\n", Device);
-      //assert (0);
-   }
    
-   return (Result == (int) Count);
+   errno = 0;
+   //ioctl SPI_IOC_MESSAGE returns the number of elements transfered.
+   int Result = ioctl (Device, SPI_IOC_MESSAGE (1), &Transfer);
+   Lepton_Assert (Result == (int) Count, 1, "Device %i. ioctl SPI_IOC_MESSAGE", Device);
+   
+   return Result;
 }
 
 
-//Return 0 when not successful.
-//Return 1 when successful.
+//Return -1 when not successful.
+//Return Count when successful.
 //Receive <Count> number of Lepton_Packet <Stream> from SPI <Device>
 int Lepton_SPI_Transfer_Stream 
 (struct Lepton_Packet * Stream, size_t Count, int Device)

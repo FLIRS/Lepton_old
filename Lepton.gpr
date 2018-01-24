@@ -1,0 +1,35 @@
+--TODO: Fix: "gprbuild: no sources to compile"
+
+library project Lepton is
+
+   for Languages use ("C");
+   for Library_Name use "Lepton";
+   
+   for Source_Dirs use (".");
+   for Source_Files use ("Lepton_I2C.h");
+   for Object_Dir use "obj";
+   for Library_Dir use "lib";
+   for Library_Kind use "static";
+   
+   package Builder is 
+      for Switches ("C") use 
+      (
+         "-std=gnu11", 
+         "-fdiagnostics-color", 
+         "-Wall", 
+         "-Wextra", 
+         "-Wpedantic", 
+         --"-Wno-variadic-macros", --Does not help
+         "-Wshadow", 
+         "-Werror", 
+         "-Wshadow", 
+         "-Wno-missing-field-initializers",
+         "-march=native"
+      );
+   end Builder;
+   
+   package Linker is
+      for Linker_Options use ("-lwiringPi");
+   end Linker;
+   
+end Lepton;

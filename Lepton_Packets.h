@@ -146,7 +146,8 @@ int Lepton_Packet_Is_Discard (struct Lepton_Packet * Packet)
 //Return 1 when row is valid
 int Lepton_Packet_Is_Row (struct Lepton_Packet * Packet)
 {
-   return (Packet->Number >= 0) && (Packet->Number < Lepton_Height);
+   return Packet->Number < Lepton_Height;
+   //return (Packet->Number >= 0) && (Packet->Number < Lepton_Height);
 }
 
 
