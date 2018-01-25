@@ -28,7 +28,7 @@ struct __attribute__((__packed__)) Lepton_Pixel_Grayscale16
       struct
       {
          uint16_t A;
-      } C;
+      } Channel;
       uint16_t Data;
    };
 };

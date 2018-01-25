@@ -3,8 +3,8 @@ project Test is
    for Languages use ("C");
    for Source_Dirs use (".");
    for Object_Dir use "obj";
-   for Exec_Dir use "bin";
-   for Main use ("all.c", "test_vsync.c");
+   for Exec_Dir use ".";
+   for Main use ("all.c", "test_vsync.c", "grab.c", "render.c");
    
    package Builder is 
    end Builder;
@@ -13,6 +13,7 @@ project Test is
       for Switches ("C") use 
       (
          "-Wno-missing-field-initializers",
+         "-Wno-missing-braces", 
          "-Wno-error=unused-but-set-variable",
          "-std=gnu11", 
          "-fdiagnostics-color", 
@@ -29,6 +30,8 @@ project Test is
    
    package Linker is
       for Switches ("test_vsync.c") use ("-lwiringPi");
+      for Switches ("grab.c") use ("-lwiringPi");
+      for Switches ("render.c") use ("´sdl2-config --cflags --libs´", "-lm", "-lSDL2_ttf", "-lSDL2_image");
    end Linker;
    
 end Test;
