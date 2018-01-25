@@ -24,14 +24,16 @@ project Test is
          "-Wshadow", 
          "-Werror", 
          "-Wshadow", 
-         "-march=native"
+         "-march=native",
+         "-D_REENTRANT"
       );
+      --for Switches ("render.c") use ();
    end Compiler;
    
    package Linker is
       for Switches ("test_vsync.c") use ("-lwiringPi");
       for Switches ("grab.c") use ("-lwiringPi");
-      for Switches ("render.c") use ("´sdl2-config --cflags --libs´", "-lm", "-lSDL2_ttf", "-lSDL2_image");
+      for Switches ("render.c") use ("-lSDL2", "-lm", "-lSDL2_ttf", "-lSDL2_image");
    end Linker;
    
 end Test;

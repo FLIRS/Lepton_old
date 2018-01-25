@@ -1,4 +1,4 @@
-//gcc render.c -std=gnu11 -fdiagnostics-color -Wall -Wno-missing-braces `sdl2-config --cflags --libs` -lm -lSDL2_ttf -lSDL2_image -o render
+//gcc render.c -std=gnu11 -fdiagnostics-color -Wall -Wno-missing-braces `sdl2-config --cflags --libs` -lm -lSDL2_ttf -lSDL2_image -o render && ./grab | ./render
 
 #include "util.h"
 #include "pixel.h"
@@ -69,10 +69,9 @@ void Map_Linear_floatv
    float B1
 )
 {
-   for (size_t I = 0; I < Count; I = I + 1)
-   {
-      Destination [I] = Map_Linear_float (Source [I], A0, A1, B0, B1);
-   }
+   for 
+   (size_t I = 0; I < Count; I = I + 1)
+   {Destination [I] = Map_Linear_float (Source [I], A0, A1, B0, B1);}
 }
 
 
@@ -165,7 +164,10 @@ int main (int argc, char * argv [])
       SDL_WINDOWPOS_UNDEFINED, 
       640, 
       480, 
-      SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN
+      SDL_WINDOW_OPENGL | 
+      SDL_WINDOW_SHOWN | 
+      //SDL_WINDOW_FULLSCREEN |
+      0
    );
    Assert (Window != NULL, 1, "SDL_CreateWindow failed. %s", SDL_GetError ());
    
@@ -179,9 +181,6 @@ int main (int argc, char * argv [])
    Texture = SDL_CreateTexture (Renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, Width, Height);
    Assert (Texture != NULL, 1, "SDL_CreateTexture failed. %s", SDL_GetError ());
    SDL_SetTextureBlendMode (Texture, SDL_BLENDMODE_BLEND);
-   
-
-   
    
    while (1)
    {
