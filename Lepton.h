@@ -43,3 +43,24 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //This step ensures a timeout of the VoSPI interface, 
 //which puts the Lepton in the proper state to establish (or re-establish) synchronization.
 #define Lepton_Synchronization_Idle_Microseconds 200000
+
+
+
+#define Lepton_Code_Generator(X)   __COUNTER__
+#define Lepton_Error_Generator(X) -__COUNTER__
+
+enum Lepton_Result
+{
+   Lepton_Error_Range = Lepton_Error_Generator (1)
+};
+
+
+
+
+#ifndef Lepton_Assert
+#define Lepton_Assert(A, Code, Message, ...)
+#endif
+
+#ifndef Lepton_Log
+#define Lepton_Log(Code, Message, ...)
+#endif

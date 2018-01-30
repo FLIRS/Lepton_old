@@ -60,6 +60,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 
+enum Lepton_SPI_Result
+{
+   Lepton_SPI_Error = Lepton_Error_Generator (1)
+};
+
+
+
 int Lepton_SPI_Open (char const * Name)
 {
    int Device;
@@ -70,39 +77,39 @@ int Lepton_SPI_Open (char const * Name)
    
    errno = 0;
    Device = open (Name, O_RDWR, S_IRUSR | S_IWUSR);
-   Lepton_Assert (Device != -1, 1, "open %s", Name);
+   Lepton_Assert (Device != -1, Lepton_SPI_Error, "open %s", Name);
    if (Device < 0) {return Device;}
    
    errno = 0;
    Result = ioctl (Device, SPI_IOC_WR_MODE, &Mode);
-   Lepton_Assert (Result != -1, 1, "Device %i. can't set spi mode", Device);
+   Lepton_Assert (Result != -1, Lepton_SPI_Error, "Device %i. can't set spi mode", Device);
    if (Result == -1) {return Device;}
    
    errno = 0;
    Result = ioctl (Device, SPI_IOC_WR_MAX_SPEED_HZ, &SPI_Max_Speed);
-   Lepton_Assert (Result != -1, 1,"Device %i. can't set max speed hz", Device);
+   Lepton_Assert (Result != -1, Lepton_SPI_Error,"Device %i. can't set max speed hz", Device);
    if (Result == -1) {return Device;}
    
    errno = 0;
    Result = ioctl (Device, SPI_IOC_WR_BITS_PER_WORD, &Bits_Per_Word);
-   Lepton_Assert (Result != -1, 1, "Device %i. can't set bits per word", Device);
+   Lepton_Assert (Result != -1, Lepton_SPI_Error, "Device %i. can't set bits per word", Device);
    if (Result == -1) {return Device;}
    
    errno = 0;
    Result = ioctl (Device, SPI_IOC_RD_MODE, &Mode);
-   Lepton_Assert (Result != -1, 1, "Device %i. can't get spi mode", Device);
-   Lepton_Assert (Mode == Lepton_SPI_Mode, 1, "Device %i. ", Device);
+   Lepton_Assert (Result != -1, Lepton_SPI_Error, "Device %i. can't get spi mode", Device);
+   Lepton_Assert (Mode == Lepton_SPI_Mode, Lepton_SPI_Error, "Device %i. ", Device);
    if (Result == -1) {return Device;}
 
    errno = 0;
    Result = ioctl (Device, SPI_IOC_RD_BITS_PER_WORD, &Bits_Per_Word);
-   Lepton_Assert (Result != -1, 1, "Device %i. can't get bits per word", Device);
+   Lepton_Assert (Result != -1, Lepton_SPI_Error, "Device %i. can't get bits per word", Device);
    Lepton_Assert (Bits_Per_Word == Lepton_SPI_Bits_Per_Word, 1, "Device %i. ", Device);
    if (Result == -1) {return Device;}
 
    errno = 0;
    Result = ioctl (Device, SPI_IOC_RD_MAX_SPEED_HZ, &SPI_Max_Speed);
-   Lepton_Assert (Result != -1, 1, "Device %i. can't get max speed hz", Device);
+   Lepton_Assert (Result != -1, Lepton_SPI_Error, "Device %i. can't get max speed hz", Device);
    Lepton_Assert (SPI_Max_Speed == Lepton_SPI_Speed_Recomended, 1, "Device %i. ", Device);
    if (Result == -1) {return Device;}
 
@@ -156,7 +163,7 @@ int Lepton_SPI_Transfer_Stream8
    errno = 0;
    //ioctl SPI_IOC_MESSAGE returns the number of elements transfered.
    int Result = ioctl (Device, SPI_IOC_MESSAGE (1), &Transfer);
-   Lepton_Assert (Result == (int) Count, 1, "Device %i. ioctl SPI_IOC_MESSAGE", Device);
+   Lepton_Assert (Result == (int) Count, Lepton_SPI_Error, "Device %i. ioctl SPI_IOC_MESSAGE", Device);
    
    return Result;
 }
