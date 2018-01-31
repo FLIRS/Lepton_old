@@ -29,7 +29,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "Lepton.h"
 #include "Lepton_Packets.h"
-#include "Lepton_Error.h"
 
 
 //Lepton FLIR Datasheet page 29.

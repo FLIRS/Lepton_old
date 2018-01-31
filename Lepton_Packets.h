@@ -43,6 +43,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //size_t
 #include <stddef.h>
 
+
+#include <stdbool.h>
+
 //Using: 
 //be16toh
 #include <endian.h>
@@ -87,11 +90,13 @@ struct __attribute__((__packed__)) Lepton_Packet
 };
 
 
-//Return 0 when CRC mismatch
-//Return 1 when CRC match
-int Lepton_Packet_Is_Match (struct Lepton_Packet * Packet)
+//Return false when CRC mismatch
+//Return true when CRC match
+bool 
+Lepton_Packet_Is_Match 
+(struct Lepton_Packet * Packet)
 {
-   int Success;
+   bool Success;
    
    //Might not be necessary.
    //This holds segment number value at packet 20.
@@ -123,18 +128,22 @@ int Lepton_Packet_Is_Match (struct Lepton_Packet * Packet)
 }
 
 
-//Return 0 when not first packet
-//Return 1 when first packet
-int Lepton_Packet_Is_First (struct Lepton_Packet * Packet)
+//Return false when not first packet
+//Return true when first packet
+bool 
+Lepton_Packet_Is_First 
+(struct Lepton_Packet * Packet)
 {
    //This checks if the packet is the first packet of a frame.
    return Packet->Number == 0;
 }
 
 
-//Return 0 when non discard
-//Return 1 when discard
-int Lepton_Packet_Is_Discard (struct Lepton_Packet * Packet)
+//Return false when non discard
+//Return true when discard
+bool 
+Lepton_Packet_Is_Discard 
+(struct Lepton_Packet * Packet)
 {
    //This checks if the packet is a discard packet.
    //Lepton Datasheet Page 41 - Packet Header Encoding.
@@ -142,9 +151,11 @@ int Lepton_Packet_Is_Discard (struct Lepton_Packet * Packet)
 }
 
 
-//Return 0 when row is not valid
-//Return 1 when row is valid
-int Lepton_Packet_Is_Row (struct Lepton_Packet * Packet)
+//Return false when row is not valid
+//Return true when row is valid
+bool 
+Lepton_Packet_Is_Row 
+(struct Lepton_Packet * Packet)
 {
    return Packet->Number < Lepton_Height;
    //return (Packet->Number >= 0) && (Packet->Number < Lepton_Height);
@@ -152,9 +163,11 @@ int Lepton_Packet_Is_Row (struct Lepton_Packet * Packet)
 
 
 //Convert the packet to host byte order.
-void Lepton_Packet_To_Host (struct Lepton_Packet * Packet)
+void 
+Lepton_Packet_To_Host 
+(struct Lepton_Packet * Packet)
 {
-   for (int I = 0; I < Lepton_Width; I = I + 1)
+   for (size_t I = 0; I < Lepton_Width; I = I + 1)
    {
       //Everything larger than 8 bit need be converted 
       //from big endian byte order to host byte order.

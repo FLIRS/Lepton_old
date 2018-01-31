@@ -35,8 +35,8 @@ Lepton_Stream_Check_Climbing_Number
    Lepton_Assert (Count > 0, Lepton_Error_Range, "Count %i is non posetive", Count);
    for (size_t I = 0; I < (Count - 1); I = I + 1)
    {
-      uint8_t X0 = Stream [I + 0].Number;
-      uint8_t X1 = Stream [I + 1].Number;
+      uint_fast8_t X0 = Stream [I + 0].Number;
+      uint_fast8_t X1 = Stream [I + 1].Number;
       if ((X0 + 1) != X1) {return false;}
    }
    return true;
@@ -53,7 +53,7 @@ Lepton_Stream_Accept
 (int Device, struct Lepton_Pixel_Grayscale16 * Pixmap)
 {
    struct Lepton_Packet Stream [Lepton_Height];
-   int Result;
+   int32_t Result;
    Result = Lepton_SPI_Transfer_Stream8 ((uint8_t *) Stream, sizeof (Stream), Device);
    if (Result != sizeof (Stream)) {return Result;}
    for (size_t I = 0; I < Lepton_Height; I = I + 1)
@@ -67,13 +67,14 @@ Lepton_Stream_Accept
       Lepton_SPI_Transfer_Stream (Stream, 1, Device);
       return Lepton_Stream_Shifting;
    }
-   int Segment;
+   int32_t Segment;
    Segment = Stream [20].Reserved >> 4;
-   if ((Segment <= 0) || (Segment > 4)) {return Lepton_Stream_Invalid_Segment;}
-   for (size_t I = 0; I < Lepton_Height; I = I + 1)
-   {
-      Lepton_Conversions_Packet_To_Grayscale16 (Stream + I, Pixmap, Segment - 1);
-   }
+   if 
+   ((Segment <= 0) || (Segment > 4)) 
+   {return Lepton_Stream_Invalid_Segment;}
+   for 
+   (size_t I = 0; I < Lepton_Height; I = I + 1)
+   {Lepton_Conversions_Packet_To_Grayscale16 (Stream + I, Pixmap, Segment - 1);}
    return Segment;
 }
 
