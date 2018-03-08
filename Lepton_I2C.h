@@ -247,8 +247,8 @@ int Lepton_I2C_Write
    int Result;
    errno = 0;
    Result = write (Device, (void *) Data, Size8);
-   Lepton_Assert (errno == 0, 1, "Device %i. write", Device);
-   Lepton_Assert (Result == (int) Size8, 1, "Device %i. write", Device);
+   Lepton_Assert (Result >= 0, 1, "Device (%d): write error", Device);
+   Lepton_Assert (Result == (int) Size8, 1, "Device (%d): write error. wrote %d of %d", Device, Result, Size8);
    return Result;
 }
 

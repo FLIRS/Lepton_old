@@ -30,34 +30,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //printf
 #include <stdio.h>
 
-void Lepton_Strings_Base_Converter (int Value, char * String, size_t Size, size_t Base)
+#include <assert.h>
+
+
+//Use this to print in base 2 or any base.
+void Lepton_Strings_Base_Converter (int Value, char * Buffer, size_t Size, size_t Base)
 {
-   char Hex [] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-   size_t I = Size;
-   while (1)
-   {
-      if (Value == 0 || I == 0)
-      {
-         break;
-      }
-      I = I - 1;
-      String [I] = Hex [Value % Base];
-      Value = Value / Base;
-   }
+	assert (Base <= 36);
+	assert (Buffer != NULL);
+	memset (Buffer, '0', Size - 1);
+	char Hex [] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	size_t I = Size;
+	while (1)
+	{
+		if (Value == 0 || I == 0) {break;}
+		I = I - 1;
+		Buffer [I] = Hex [Value % Base];
+		Value = Value / Base;
+	}
 }
-
-
-
-void Lepton_Strings_Base_printf (FILE * File, int Value, size_t Width, size_t Base, char const * Format)
-{
-   char Buffer [100] = {'\0'};
-   assert (Width < sizeof (Buffer));
-   memset (Buffer, '0', Width);
-   Lepton_Strings_Base_Converter (Value, Buffer, Width, Base);
-   fprintf (File, Format, Buffer);
-}
-
-
 
 
 char const * Lepton_Strings_Command (int Command)
