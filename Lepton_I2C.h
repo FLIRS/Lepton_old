@@ -181,22 +181,15 @@ struct __attribute__((__packed__)) Lepton_I2C_GPIO_Mode
 
 struct __attribute__((__packed__)) Lepton_I2C_Shutter_Mode 
 {
-   uint16_t Shutter_Mode;
-   uint16_t Padding_0;
-   uint16_t Temp_Lockout_State;
-   uint16_t Padding_1;
-   uint16_t Video_Freeze_During_FFC;
-   uint16_t Padding_2;
-   uint16_t FFC_Desired;
-   uint16_t Padding_3;
-   uint32_t Elapsed_Time_Since_Last_FFC;
-   //uint16_t Padding_4;
-   uint32_t Desired_FFC_Period;
-   //uint16_t Padding_5;
-   uint16_t	Explicit_Command_To_Open;
-   uint16_t Padding_6;
-   uint16_t Desired_FFC_Temp_Delta;
-   uint16_t Imminent_Delay;
+	uint32_t Shutter_Mode;
+	uint32_t Temp_Lockout_State;
+	uint32_t Video_Freeze_During_FFC;
+	uint32_t FFC_Desired;
+	uint32_t Elapsed_Time_Since_Last_FFC;
+	uint32_t Desired_FFC_Period;
+	uint32_t Explicit_Command_To_Open;
+	uint16_t Desired_FFC_Temp_Delta;
+	uint16_t Imminent_Delay;
 };
 
 
@@ -312,7 +305,7 @@ void Lepton_I2C_Execute1
          
       case Lepton_I2C_Command_Type_Set:
          Bank.Register = htobe16 (Lepton_I2C_Register_Data_0);
-         assert (Size8 <= 16);
+         assert (Size8 <= 32);
          memcpy (Bank.Data, Data, Size8);
          Lepton_I2C_Write (Device, (uint8_t *) &Bank, Size8 + sizeof (uint16_t));
          Lepton_I2C_Write_Length (Device, Size8);
