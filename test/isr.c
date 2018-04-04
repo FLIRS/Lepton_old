@@ -27,7 +27,7 @@
 
 //
 #include <signal.h>
-#include <poll.h>
+#include <sys/epoll.h>
 
 
 int Lep_Execute 
@@ -87,13 +87,9 @@ void Reboot (int Device)
 		Log ("Lepton device (%d): status = %16s", Device, Buffer);
 	}
 	
-	
-	Log ("Lepton device (%d): Rebooting", Device);
 	Lepton_I2C_Write_Command (Device, Lepton_I2C_Command_Reboot);
 	sleep (3);
 	
-	
-	Log ("Lepton device (%d): Enabling vsync", Device);
 	{
 		struct Lepton_I2C_GPIO_Mode GPIO_Mode;
 		GPIO_Mode.Value = htobe16 (Lepton_I2C_GPIO_Mode_Vsync);
@@ -107,8 +103,6 @@ void Reboot (int Device)
 			Trial_Count
 		);
 	}
-	
-	Log ("Lepton device (%d): Disabling FFC", Device);
 	{
 		struct Lepton_I2C_Shutter_Mode Mode;
 		int Result;
@@ -124,24 +118,8 @@ void Reboot (int Device)
 		);
 		if (!Result) {return;};
 		
-		//If successful then convert the received data from big endian to host endian.
-		Lepton_Endian_be16tohv (sizeof (struct Lepton_I2C_Shutter_Mode) / sizeof (uint16_t), (uint16_t *) &Mode);
-		
-		Log ("%-40s : %010zu", "Shutter_Mode", (uint32_t) Mode.Shutter_Mode);
-		Log ("%-40s : %010zu", "Temp_Lockout_State", (uint32_t) Mode.Temp_Lockout_State);
-		Log ("%-40s : %010zu", "Video_Freeze_During_FFC", (uint32_t) Mode.Video_Freeze_During_FFC);
-		Log ("%-40s : %010zu", "FFC_Desired", (uint32_t) Mode.FFC_Desired);
-		Log ("%-40s : %010zu", "Elapsed_Time_Since_Last_FFC", (uint32_t) Mode.Elapsed_Time_Since_Last_FFC);
-		Log ("%-40s : %010zu", "Desired_FFC_Period", (uint32_t) Mode.Desired_FFC_Period);
-		Log ("%-40s : %010zu", "Explicit_Command_To_Open", (uint32_t) Mode.Explicit_Command_To_Open);
-		Log ("%-40s : %010i", "Desired_FFC_Temp_Delta", (uint16_t) Mode.Desired_FFC_Temp_Delta);
-		Log ("%-40s : %010i", "Imminent_Delay", (uint16_t) Mode.Imminent_Delay);
-		
 		//Disable shutter
-		Mode.Shutter_Mode = 0;
-		
-		//Convert the data from host endian to big endian
-		Lepton_Endian_htobe16v (sizeof (struct Lepton_I2C_Shutter_Mode) / sizeof (uint16_t), (uint16_t *) &Mode);
+		Mode.Shutter_Mode = htobe16 (0);
 		
 		Result = Lep_Execute 
 		(
@@ -153,31 +131,6 @@ void Reboot (int Device)
 			Trial_Count
 		);
 		if (!Result) {return;};
-		
-		
-		Result = Lep_Execute 
-		(
-			Device, 
-			Lepton_I2C_Command_FFC_Mode_Get,
-			(void *) &Mode,
-			sizeof (Mode),
-			Micro_Sleep,
-			Trial_Count 
-		);
-		if (!Result) {return;};
-		
-		//If successful then convert the received data from big endian to host endian.
-		Lepton_Endian_be16tohv (sizeof (struct Lepton_I2C_Shutter_Mode) / sizeof (uint16_t), (uint16_t *) &Mode);
-		
-		Log ("%-40s : %010zu", "Shutter_Mode", (uint32_t) Mode.Shutter_Mode);
-		Log ("%-40s : %010zu", "Temp_Lockout_State", (uint32_t) Mode.Temp_Lockout_State);
-		Log ("%-40s : %010zu", "Video_Freeze_During_FFC", (uint32_t) Mode.Video_Freeze_During_FFC);
-		Log ("%-40s : %010zu", "FFC_Desired", (uint32_t) Mode.FFC_Desired);
-		Log ("%-40s : %010zu", "Elapsed_Time_Since_Last_FFC", (uint32_t) Mode.Elapsed_Time_Since_Last_FFC);
-		Log ("%-40s : %010zu", "Desired_FFC_Period", (uint32_t) Mode.Desired_FFC_Period);
-		Log ("%-40s : %010zu", "Explicit_Command_To_Open", (uint32_t) Mode.Explicit_Command_To_Open);
-		Log ("%-40s : %010i", "Desired_FFC_Temp_Delta", (uint16_t) Mode.Desired_FFC_Temp_Delta);
-		Log ("%-40s : %010i", "Imminent_Delay", (uint16_t) Mode.Imminent_Delay);
 	}
 }
 
@@ -265,29 +218,37 @@ int main (int argc, char * argv [])
 	int F = Open_GPIO (17);
 
 	
-	struct pollfd fdset [1] = {0};
+	int Eventpoll = epoll_create1 (0);
+	Assert (Eventpoll != -1, "epoll_create error%s", "");
 	
+	{
+		struct epoll_event Event;
+		Event.data.fd = F;
+		Event.events = EPOLLIN | EPOLLET;
+		int R = epoll_ctl (Eventpoll, EPOLL_CTL_ADD, F, &Event);
+		Assert (R != -1, "epoll_ctl (%d) error", Eventpoll);
+	}
 
 	while (1)
 	{
 		
-		fdset [0].fd = F;
-		fdset [0].events = POLLPRI;
-		fdset [0].revents = 0;
-		int R;
-		R = poll (fdset, 1, 5000);
-		Assert (R >= 0, "poll%s", "");
-		
-		if (fdset [0].revents & POLLPRI)
+		size_t const Event_List_Size = 100;
+		struct epoll_event Event_List [Event_List_Size];
+		int N = epoll_wait (Eventpoll, Event_List, Event_List_Size, -1);
+		Assert (N != -1, "epoll_wait (%d) error", Eventpoll);
+		for (int I = 0; I < N; I = I + 1)
 		{
-			lseek (F, 0, SEEK_SET);
-			fsync (F);
-			fprintf (stderr, ".");
-			//size_t const Buf_Count = 10;
-			//char Buf [Buf_Count];
-			//R = read (F, Buf, Buf_Count);
-			//fwrite (Buf, sizeof (char), R, stderr);
-			//fprintf (stderr, "\n");
+			if (Event_List [I].data.fd == F)
+			{
+				fprintf (stderr, ".");
+				size_t const Buf_Count = 10;
+				char Buf [Buf_Count];
+				lseek (F, 0, SEEK_SET);
+				read (F, Buf, Buf_Count);
+			}
+			else
+			{
+			}
 		}
 	}
 	
